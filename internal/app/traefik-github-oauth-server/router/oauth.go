@@ -9,7 +9,7 @@ import (
 	server "github.com/MuXiu1997/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
 	"github.com/MuXiu1997/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server/model"
 	"github.com/MuXiu1997/traefik-github-oauth-plugin/internal/pkg/constant"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/render"
 	"github.com/google/go-github/v49/github"
 	"github.com/spf13/cast"
 	"golang.org/x/oauth2"
@@ -21,15 +21,19 @@ var (
 	ErrInvalidAuthURL    = fmt.Errorf("invalid auth url")
 )
 
-func generateOAuthPageURL(app *server.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		setNoCacheHeaders(c)
-		body := model.RequestGenerateOAuthPageURL{}
-		err := c.ShouldBindJSON(&body)
+// GET /oauth/page-url
+func OauthPageUrlHandler(app *server.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var body model.RequestGenerateOAuthPageURL
+
+		setNoCacheHeaders(w)
+
+		err := render.DecodeJSON(r.Body, &body)
 		if err != nil {
 			app.Logger.Debug().Err(err).Msg("invalid request")
-			c.JSON(http.StatusBadRequest, model.ResponseError{
-				Message: fmt.Sprintf("BadRequest: %s", err.Error()),
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, model.ResponseError{
+				Message: fmt.Sprintf("BadRequest"),
 			})
 			return
 		}
@@ -46,9 +50,10 @@ func generateOAuthPageURL(app *server.App) gin.HandlerFunc {
 				Stack().
 				Err(err).
 				Str("rid", rid).
-				Str("api_base_url", app.Config.ApiBaseURL).
 				Msg("failed to build redirect uri")
-			c.JSON(http.StatusInternalServerError, model.ResponseError{
+
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, model.ResponseError{
 				Message: fmt.Sprintf("[server]%s: %s", err.Error(), app.Config.ApiBaseURL),
 			})
 			return
@@ -59,33 +64,38 @@ func generateOAuthPageURL(app *server.App) gin.HandlerFunc {
 			oauth2.SetAuthURLParam(constant.QUERY_KEY_REDIRECT_URI, redirectURI),
 		)
 
-		c.JSON(
-			http.StatusCreated,
-			model.ResponseGenerateOAuthPageURL{
-				OAuthPageURL: oAuthPageURL,
-			},
-		)
+		w.WriteHeader(http.StatusCreated)
+		render.JSON(w, r, model.ResponseGenerateOAuthPageURL{
+			OAuthPageURL: oAuthPageURL,
+		})
 	}
 }
 
-func redirect(app *server.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		setNoCacheHeaders(c)
-		query := model.RequestRedirect{}
-		err := c.BindQuery(&query)
-		if err != nil {
-			app.Logger.Debug().Err(err).Msg("invalid request")
+// Get /oauth/redirect
+func OauthRedirectHandler(app *server.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		setNoCacheHeaders(w)
+
+		query := model.RequestRedirect{
+			RID:  r.URL.Query().Get("rid"),
+			Code: r.URL.Query().Get("code"),
+		}
+
+		if query.RID == "" || query.Code == "" {
+			app.Logger.Debug().Msg("invalid request")
 			return
 		}
 
 		authRequest, found := app.AuthRequestManager.Get(query.RID)
+
 		if !found {
 			app.Logger.Debug().Str("rid", query.RID).Msg("invalid rid")
-			c.String(http.StatusBadRequest, ErrInvalidRID.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(ErrInvalidRID.Error()))
 			return
 		}
 
-		user, err := oAuthCodeToUser(c.Request.Context(), app.GitHubOAuthConfig, query.Code)
+		user, err := oAuthCodeToUser(r.Context(), app.GitHubOAuthConfig, query.Code)
 		if err != nil {
 			app.Logger.Error().
 				Caller().
@@ -95,7 +105,8 @@ func redirect(app *server.App) gin.HandlerFunc {
 				Str("auth_url", authRequest.AuthURL).
 				Err(err).
 				Msg("failed to get GitHub user")
-			c.String(http.StatusInternalServerError, err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
 			return
 		}
 
@@ -109,26 +120,33 @@ func redirect(app *server.App) gin.HandlerFunc {
 				Str("rid", query.RID).
 				Str("auth_url", authRequest.AuthURL).
 				Msg("invalid auth url")
-			c.String(http.StatusInternalServerError, "%s: %s", ErrInvalidAuthURL.Error(), authRequest.AuthURL)
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(fmt.Errorf("%s:, %s", ErrInvalidAuthURL.Error(), authRequest.AuthURL).Error()))
 			return
 		}
 		authURLQuery := authURL.Query()
 		authURLQuery.Set(constant.QUERY_KEY_REQUEST_ID, query.RID)
 		authURL.RawQuery = authURLQuery.Encode()
 
-		c.Redirect(http.StatusFound, authURL.String())
+		http.Redirect(w, r, authURL.String(), http.StatusFound)
 	}
 }
 
-func getAuthResult(app *server.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		setNoCacheHeaders(c)
-		query := model.RequestGetAuthResult{}
-		err := c.ShouldBindQuery(&query)
-		if err != nil {
-			app.Logger.Debug().Err(err).Msg("invalid request")
-			c.JSON(http.StatusBadRequest, model.ResponseError{
-				Message: fmt.Sprintf("invalid request: %s", err.Error()),
+// Get /oauth/result
+func OauthAuthResultHandler(app *server.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		setNoCacheHeaders(w)
+
+		query := model.RequestGetAuthResult{
+			RID: r.URL.Query().Get("rid"),
+		}
+
+		if query.RID == "" {
+			app.Logger.Debug().Msg("invalid request missing RID")
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, model.ResponseError{
+				Message: "BadRequest",
 			})
 			return
 		}
@@ -136,14 +154,17 @@ func getAuthResult(app *server.App) gin.HandlerFunc {
 		authRequest, found := app.AuthRequestManager.Pop(query.RID)
 		if !found {
 			app.Logger.Debug().Str("rid", query.RID).Msg("invalid rid")
-			c.JSON(http.StatusBadRequest, model.ResponseError{
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, model.ResponseError{
 				Message: ErrInvalidRID.Error(),
 			})
 			return
 		}
 
-		c.JSON(
-			http.StatusOK,
+		w.WriteHeader(http.StatusOK)
+		render.JSON(
+			w,
+			r,
 			model.ResponseGetAuthResult{
 				RedirectURI:     authRequest.RedirectURI,
 				GitHubUserID:    authRequest.GitHubUserID,
@@ -162,10 +183,13 @@ func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code strin
 	}
 	ctxClient, cancelClient := context.WithCancel(ctx)
 	defer cancelClient()
+
 	gitHubApiHttpClient := oAuthConfig.Client(ctxClient, token)
 	gitHubApiClient := github.NewClient(gitHubApiHttpClient)
+
 	ctxGetUser, cancelGetUser := context.WithCancel(ctx)
 	defer cancelGetUser()
+
 	user, _, err := gitHubApiClient.Users.Get(ctxGetUser, "")
 	if err != nil {
 		return nil, err
@@ -185,8 +209,8 @@ func buildRedirectURI(apiBaseUrl, rid string) (string, error) {
 	return redirectURI.String(), nil
 }
 
-func setNoCacheHeaders(c *gin.Context) {
-	c.Header(constant.HTTP_HEADER_CACHE_CONTROL, "no-cache, no-store, must-revalidate, private")
-	c.Header(constant.HTTP_HEADER_PRAGMA, "no-cache")
-	c.Header(constant.HTTP_HEADER_EXPIRES, "0")
+func setNoCacheHeaders(w http.ResponseWriter) {
+	w.Header().Add("cache-control", "no-cache, no-store, must-revalidate, private")
+	w.Header().Add("pragma", "no-cache")
+	w.Header().Add("expires", "0")
 }

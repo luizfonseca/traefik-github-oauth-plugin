@@ -4,29 +4,19 @@ import (
 	"net/http"
 
 	server "github.com/MuXiu1997/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
-	"github.com/MuXiu1997/traefik-github-oauth-plugin/internal/pkg/constant"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 )
 
 func RegisterRoutes(app *server.App) {
 	apiSecretKeyMiddleware := server.NewApiSecretKeyMiddleware(app.Config.ApiSecretKey)
 
-	app.Engine.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "")
+	app.Router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
 
-	app.Engine.GET(constant.ROUTER_PATH_OAUTH_HEALTH, healthCheck(app))
-
-	oauthGroup := app.Engine.Group(constant.ROUTER_GROUP_PATH_OAUTH)
-	oauthGroup.POST(
-		constant.ROUTER_PATH_OAUTH_PAGE_URL,
-		apiSecretKeyMiddleware,
-		generateOAuthPageURL(app),
-	)
-	oauthGroup.GET(constant.ROUTER_PATH_OAUTH_REDIRECT, redirect(app))
-	oauthGroup.GET(
-		constant.ROUTER_PATH_OAUTH_RESULT,
-		apiSecretKeyMiddleware,
-		getAuthResult(app),
-	)
+	app.Router.Route("/oauth", func(r chi.Router) {
+		r.Get("/redirect", OauthRedirectHandler(app))
+		r.With(apiSecretKeyMiddleware).Post("/page-url", OauthPageUrlHandler(app))
+		r.With(apiSecretKeyMiddleware).Get("/result", OauthAuthResultHandler(app))
+	})
 }

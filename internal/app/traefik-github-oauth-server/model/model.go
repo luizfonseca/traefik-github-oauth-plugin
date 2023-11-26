@@ -1,8 +1,20 @@
 package model
 
+import (
+	"errors"
+	"net/http"
+)
+
 type RequestGenerateOAuthPageURL struct {
 	RedirectURI string `json:"redirect_uri" binding:"required"`
 	AuthURL     string `json:"auth_url" binding:"required"`
+}
+
+func (m *RequestGenerateOAuthPageURL) Bind(r *http.Request) error {
+	if (m.RedirectURI == "") || (m.AuthURL == "") {
+		return errors.New("invalid request")
+	}
+	return nil
 }
 
 type ResponseGenerateOAuthPageURL struct {

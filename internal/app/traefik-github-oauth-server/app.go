@@ -8,22 +8,21 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/patrickmn/go-cache"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/hlog"
 	"golang.org/x/oauth2"
+
 	oauth2github "golang.org/x/oauth2/github"
 )
-
-func init() {
-	gin.SetMode(gin.ReleaseMode)
-}
 
 // App the Traefik GitHub OAuth server application.
 type App struct {
 	Config             *Config
 	Server             *http.Server
-	Engine             *gin.Engine
+	Router             *chi.Mux
 	GitHubOAuthConfig  *oauth2.Config
 	AuthRequestManager *AuthRequestManager
 	Logger             *zerolog.Logger
@@ -32,13 +31,11 @@ type App struct {
 func NewApp(
 	config *Config,
 	server *http.Server,
-	engine *gin.Engine,
+	router *chi.Mux,
 	authRequestManager *AuthRequestManager,
 	logger *zerolog.Logger,
 ) *App {
-	gin.DebugPrintRouteFunc = ginDebugPrintRouteFunc(logger)
 	if config.DebugMode {
-		gin.SetMode(gin.DebugMode)
 		config.LogLevel = "DEBUG"
 	}
 
@@ -51,15 +48,17 @@ func NewApp(
 		logger.Level(zerolog.WarnLevel)
 	case "ERROR", "error":
 		logger.Level(zerolog.ErrorLevel)
+	default:
+		logger.Level(zerolog.InfoLevel)
 	}
 
 	server.Addr = config.ServerAddress
-	server.Handler = engine
+	server.Handler = router
 
 	app := &App{
 		Config: config,
 		Server: server,
-		Engine: engine,
+		Router: router,
 		GitHubOAuthConfig: &oauth2.Config{
 			ClientID:     config.GitHubOAuthClientID,
 			ClientSecret: config.GitHubOAuthClientSecret,
@@ -73,24 +72,46 @@ func NewApp(
 }
 
 func NewDefaultApp() *App {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	// router := chi.NewRouter()
+	logger := zerolog.New(os.Stdout).With().Str("service", "traefik-github-oauth").Timestamp().Logger()
 
-	engine := gin.New()
-	engine.Use(NewLoggerMiddleware(&logger), gin.Recovery())
+	router := chi.NewRouter()
+
+	// Add middleware to provide more access information through logs
+	router.Use(hlog.NewHandler(logger))
+	router.Use(hlog.AccessHandler(
+		func(r *http.Request, status, size int, duration time.Duration) {
+			hlog.FromRequest(r).Info().
+				Str("method", r.Method).
+				Str("host", r.Host).
+				Stringer("url", r.URL).
+				Int("status", status).
+				Int("size", size).
+				Dur("duration", duration).
+				Msg("")
+		}),
+		hlog.RefererHandler("referer"),
+		hlog.UserAgentHandler("userAgent"),
+		hlog.RequestIDHandler("requestId", "Request-Id"),
+		hlog.RemoteAddrHandler("ip"))
+	// Recoverer middleware recovers from panics and writes a 500 if there was one.
+	router.Use(middleware.Recoverer)
+
+	config := NewConfigFromEnv()
 	return NewApp(
-		NewConfigFromEnv(),
+		config,
 		&http.Server{
 			ReadHeaderTimeout: 5 * time.Second,
 		},
-		engine,
+		router,
 		NewAuthRequestManager(cache.New(10*time.Minute, 30*time.Minute)),
 		&logger,
 	)
 }
 
 func (app *App) Run() {
+	app.Logger.Info().Msgf("Server listening on %s", app.Server.Addr)
 	go func() {
+
 		if err := app.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			app.Logger.Fatal().Err(err).Msgf("Failed to listen: %s\n", err)
 		}
@@ -107,16 +128,4 @@ func (app *App) Run() {
 	}
 	defer cancel()
 	app.Logger.Info().Msg("Server exiting")
-}
-
-func ginDebugPrintRouteFunc(logger *zerolog.Logger) func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
-	return func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
-		logger.Debug().
-			Str("module", "gin-debug").
-			Str("http_method", httpMethod).
-			Str("path", absolutePath).
-			Str("handler_name", handlerName).
-			Int("num_handlers", nuHandlers).
-			Msg("")
-	}
 }

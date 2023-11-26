@@ -74,6 +74,8 @@ func NewApp(
 
 func NewDefaultApp() *App {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+	// router := chi.NewRouter()
+
 	engine := gin.New()
 	engine.Use(NewLoggerMiddleware(&logger), gin.Recovery())
 	return NewApp(

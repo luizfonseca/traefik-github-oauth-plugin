@@ -12,7 +12,7 @@ require (
 	github.com/rs/xid v1.5.0
 	github.com/rs/zerolog v1.31.0
 	github.com/scylladb/go-set v1.0.2
-	github.com/spf13/cast v1.5.0
+	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.14.0
 )
@@ -20,7 +20,6 @@ require (
 require (
 	github.com/ajg/form v1.5.1 // indirect
 	github.com/ggicci/owl v0.4.0 // indirect
-	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )
 

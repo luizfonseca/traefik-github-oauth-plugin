@@ -21,7 +21,7 @@ func NewApiSecretKeyMiddleware(apiSecretKey string) gin.HandlerFunc {
 		reqSecretKey := c.GetHeader(constant.HTTP_HEADER_AUTHORIZATION)
 		if reqSecretKey != fmt.Sprintf("%s %s", constant.AUTHORIZATION_PREFIX_TOKEN, apiSecretKey) {
 			c.JSON(http.StatusUnauthorized, model.ResponseError{
-				Message: "invalid api secret key",
+				Message: "Invalid Credentials",
 			})
 		}
 		c.Next()

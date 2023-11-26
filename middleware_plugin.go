@@ -136,7 +136,7 @@ func (p *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWriter, req
 	}
 	if !p.whitelistIdSet.Has(user.Id) && !p.whitelistLoginSet.Has(user.Login) {
 		setNoCacheHeaders(rw)
-		http.Error(rw, "not in whitelist", http.StatusForbidden)
+		http.Error(rw, "", http.StatusNotFound)
 		return
 	}
 	p.next.ServeHTTP(rw, req)

@@ -2,7 +2,7 @@ package constant
 
 //goland:noinspection GoSnakeCaseUsage
 const (
-	COOKIE_NAME_JWT = "com.github.MuXiu1997.traefik-github-oauth-plugin.jwt"
+	COOKIE_NAME_JWT = "com.github.oauth.priv.jwt"
 
 	ROUTER_PATH_OAUTH_HEALTH = "health"
 

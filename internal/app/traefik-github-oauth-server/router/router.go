@@ -12,7 +12,7 @@ func RegisterRoutes(app *server.App) {
 	apiSecretKeyMiddleware := server.NewApiSecretKeyMiddleware(app.Config.ApiSecretKey)
 
 	app.Engine.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Traefik GitHub OAuth Server")
+		c.String(http.StatusOK, "")
 	})
 
 	app.Engine.GET(constant.ROUTER_PATH_OAUTH_HEALTH, healthCheck(app))

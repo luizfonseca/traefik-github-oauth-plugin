@@ -69,6 +69,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: luizfonseca/traefik-github-oauth-server
-          short-description: server for traefik-github-oauth-plugin
+          short-description: server for traefik-github-oauth-plugin using chi-router
           readme-filepath: docker.README.md
       # endregion Docker

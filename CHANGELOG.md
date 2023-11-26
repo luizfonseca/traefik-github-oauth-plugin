@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.0...v0.4.1) (2023-11-26)
+
+
+### Bug Fixes
+
+* ignore changes to the dist folder ([2f91dd8](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/2f91dd88499bf3f5b1a796f6b7ffc86122751587))
+
 ## [0.4.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.1...v0.4.0) (2023-11-26)
 
 

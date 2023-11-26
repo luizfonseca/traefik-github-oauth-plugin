@@ -126,8 +126,6 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 		authURLQuery.Set(constant.QUERY_KEY_REQUEST_ID, query.RID)
 		authURL.RawQuery = authURLQuery.Encode()
 
-		app.Logger.Info().Msgf("redirecting to %s", authURL.String())
-
 		http.Redirect(w, r, authURL.String(), http.StatusFound)
 	}
 }

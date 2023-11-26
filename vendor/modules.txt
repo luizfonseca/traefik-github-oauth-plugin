@@ -10,6 +10,12 @@ github.com/davecgh/go-spew/spew
 # github.com/dghubble/sling v1.4.1
 ## explicit; go 1.18
 github.com/dghubble/sling
+# github.com/ggicci/httpin v0.14.2
+## explicit; go 1.20
+github.com/ggicci/httpin
+# github.com/ggicci/owl v0.4.0
+## explicit; go 1.20
+github.com/ggicci/owl
 # github.com/go-chi/chi/v5 v5.0.10
 ## explicit; go 1.14
 github.com/go-chi/chi/v5
@@ -60,8 +66,8 @@ github.com/scylladb/go-set/strset
 # github.com/spf13/cast v1.5.0
 ## explicit; go 1.18
 github.com/spf13/cast
-# github.com/stretchr/testify v1.8.1
-## explicit; go 1.13
+# github.com/stretchr/testify v1.8.4
+## explicit; go 1.20
 github.com/stretchr/testify/assert
 # golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 ## explicit; go 1.17

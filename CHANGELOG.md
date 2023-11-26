@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.1...v0.4.0) (2023-11-26)
+
+
+### Features
+
+* **server:** use chi-router instead of gin server ([e862713](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/e8627136aa97344d8d28d5cad9c2c012066f6ce2))
+* update vendor packages and add chi router ([d021f58](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/d021f58498674f928c295de6be98cc535952b3a8))
+* **vendor:** update vendor packages ([0b5975d](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/0b5975dd0864f77aa17e892e6d7418142f2f2552))
+
 ## [0.3.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.1...v0.3.1) (2023-11-26)
 
 

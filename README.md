@@ -1,5 +1,7 @@
 # Traefik GitHub OAuth Plugin
 
+> This is a fork of [MuXiu1997](https://github.com/MuXiu1997/traefik-github-oauth-plugin) repository. This fork is mostly fixing some of the security concerns I wanted to address. This will be kept synced with the main repo.
+
 This is a Traefik middleware plugin that allows users to authenticate using GitHub OAuth.
 
 The plugin is intended to be used as a replacement for the BasicAuth middleware,
@@ -25,7 +27,7 @@ providing a more secure way for users to access protected routes.
      -e 'API_BASE_URL=http://<traefik-github-oauth-server-host>' \
      -l 'traefik.http.services.traefik-github-oauth-server.loadbalancer.server.port=80' \
      -l 'traefik.http.routers.traefik-github-oauth-server.rule=Host(`<traefik-github-oauth-server-host>`)' \
-     muxiu1997/traefik-github-oauth-server
+     luizfonseca/traefik-github-oauth-server
    ```
 
 3. Install the Traefik GitHub OAuth plugin
@@ -36,7 +38,7 @@ providing a more secure way for users to access protected routes.
    experimental:
      plugins:
        github-oauth:
-         moduleName: "github.com/MuXiu1997/traefik-github-oauth-plugin"
+         moduleName: "github.com/luizfonseca/traefik-github-oauth-plugin"
          version: <version>
    ```
 
@@ -46,7 +48,7 @@ providing a more secure way for users to access protected routes.
    docker run -d --whoami test \
      --network <traefik-proxy-network> \
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.apiBaseUrl=http://traefik-github-oauth-server' \
-     --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.logins[0]=MuXiu1997' \
+     --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.logins[0]=luizfonseca' \
      --label 'traefik.http.routers.whoami.rule=Host(`whoami.example.com`)' \
      --label 'traefik.http.routers.whoami.middlewares=whoami-github-oauth' \
     traefik/whoami
@@ -88,7 +90,7 @@ whitelist:
     - 996
   # The list of GitHub user logins that in the whitelist
   logins:
-    - MuXiu1997
+    - luizfonseca
 ```
 
 ## License

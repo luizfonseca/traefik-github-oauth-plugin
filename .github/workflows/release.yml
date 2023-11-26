@@ -24,7 +24,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19
+          go-version: 1.21.4
 
       - name: Checkout
         if: ${{ steps.release.outputs.release_created }}
@@ -68,7 +68,7 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: muxiu1997/traefik-github-oauth-server
+          repository: luizfonseca/traefik-github-oauth-server
           short-description: server for traefik-github-oauth-plugin
           readme-filepath: docker.README.md
       # endregion Docker

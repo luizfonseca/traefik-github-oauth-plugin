@@ -33,8 +33,8 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "muxiu1997/{{ .ProjectName }}:latest-amd64"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "luizfonseca/{{ .ProjectName }}:latest-amd64"
     build_flag_templates:
       - "--platform=linux/amd64"
       - "--pull"
@@ -46,8 +46,8 @@ dockers:
     goos: linux
     goarch: "386"
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-i386"
-      - "muxiu1997/{{ .ProjectName }}:latest-i386"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-i386"
+      - "luizfonseca/{{ .ProjectName }}:latest-i386"
     build_flag_templates:
       - "--platform=linux/386"
       - "--pull"
@@ -59,8 +59,8 @@ dockers:
     goos: linux
     goarch: arm64
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-arm64"
-      - "muxiu1997/{{ .ProjectName }}:latest-arm64"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-arm64"
+      - "luizfonseca/{{ .ProjectName }}:latest-arm64"
     build_flag_templates:
       - "--platform=linux/arm64"
       - "--pull"
@@ -72,8 +72,8 @@ dockers:
     goos: linux
     goarch: arm
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-arm"
-      - "muxiu1997/{{ .ProjectName }}:latest-arm"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-arm"
+      - "luizfonseca/{{ .ProjectName }}:latest-arm"
     build_flag_templates:
       - "--platform=linux/arm/v6"
       - "--pull"
@@ -83,18 +83,18 @@ dockers:
       - "--label=org.opencontainers.image.version={{ .Version }}"
 
 docker_manifests:
-  - name_template: "muxiu1997/{{ .ProjectName }}:{{ .Version }}"
+  - name_template: "luizfonseca/{{ .ProjectName }}:{{ .Version }}"
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-amd64"
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-i386"
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-arm64"
-      - "muxiu1997/{{ .ProjectName }}:{{ .Version }}-arm"
-  - name_template: "muxiu1997/{{ .ProjectName }}:latest"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-amd64"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-i386"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-arm64"
+      - "luizfonseca/{{ .ProjectName }}:{{ .Version }}-arm"
+  - name_template: "luizfonseca/{{ .ProjectName }}:latest"
     image_templates:
-      - "muxiu1997/{{ .ProjectName }}:latest-amd64"
-      - "muxiu1997/{{ .ProjectName }}:latest-i386"
-      - "muxiu1997/{{ .ProjectName }}:latest-arm64"
-      - "muxiu1997/{{ .ProjectName }}:latest-arm"
+      - "luizfonseca/{{ .ProjectName }}:latest-amd64"
+      - "luizfonseca/{{ .ProjectName }}:latest-i386"
+      - "luizfonseca/{{ .ProjectName }}:latest-arm64"
+      - "luizfonseca/{{ .ProjectName }}:latest-arm"
 
 archives:
   - id: tar.gz

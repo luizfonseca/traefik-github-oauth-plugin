@@ -2,7 +2,7 @@ displayName: Traefik GitHub OAuth Plugin
 
 type: middleware
 
-import: github.com/MuXiu1997/traefik-github-oauth-plugin
+import: github.com/luizfonseca/traefik-github-oauth-plugin
 
 summary: >
   This is a Traefik middleware plugin that allows users to authenticate using GitHub OAuth.

@@ -29,7 +29,7 @@ func generateOAuthPageURL(app *server.App) gin.HandlerFunc {
 		if err != nil {
 			app.Logger.Debug().Err(err).Msg("invalid request")
 			c.JSON(http.StatusBadRequest, model.ResponseError{
-				Message: fmt.Sprintf("invalid request: %s", err.Error()),
+				Message: fmt.Sprintf("BadRequest: %s", err.Error()),
 			})
 			return
 		}

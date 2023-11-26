@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.2...v0.5.0) (2023-11-26)
+
+
+### Features
+
+* use httpin to get the correct form/json fields ([0f2f511](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/0f2f511960e07277f8427b67bf960523c6999d63))
+
 ## [0.4.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.1...v0.4.2) (2023-11-26)
 
 

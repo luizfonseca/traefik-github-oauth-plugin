@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.1...v0.4.2) (2023-11-26)
+
+
+### Bug Fixes
+
+* change package name to avoid conflicts ([f7bef93](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/f7bef9329d5bb5615b239bdc4ae5c270c29ee0e0))
+
 ## [0.4.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.0...v0.4.1) (2023-11-26)
 
 

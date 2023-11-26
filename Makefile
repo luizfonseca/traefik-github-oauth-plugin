@@ -7,3 +7,5 @@ default: build
 .PHONY: build
 build:
 	CGO_ENABLED=0 $(GO) build -o dist/$(TRAEFIK_GITHUB_OAUTH_SERVER_APP) ./cmd/$(TRAEFIK_GITHUB_OAUTH_SERVER_APP)
+run:
+	$(GO) run ./cmd/$(TRAEFIK_GITHUB_OAUTH_SERVER_APP)

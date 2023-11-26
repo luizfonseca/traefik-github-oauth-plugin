@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/MuXiu1997/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server/model"
-	"github.com/MuXiu1997/traefik-github-oauth-plugin/internal/pkg/constant"
+	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server/model"
+	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/pkg/constant"
 
 	"github.com/go-chi/render"
 )

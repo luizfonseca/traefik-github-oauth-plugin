@@ -3,8 +3,8 @@ package router
 import (
 	"net/http"
 
-	server "github.com/MuXiu1997/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
 	"github.com/go-chi/chi/v5"
+	server "github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
 )
 
 func RegisterRoutes(app *server.App) {

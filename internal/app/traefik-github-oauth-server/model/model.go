@@ -1,33 +1,21 @@
 package model
 
-import (
-	"errors"
-	"net/http"
-)
-
 type RequestGenerateOAuthPageURL struct {
-	RedirectURI string `json:"redirect_uri" binding:"required"`
-	AuthURL     string `json:"auth_url" binding:"required"`
+	RedirectURI string `json:"redirect_uri"`
+	AuthURL     string `json:"auth_url"`
 }
 
-func (m *RequestGenerateOAuthPageURL) Bind(r *http.Request) error {
-	if (m.RedirectURI == "") || (m.AuthURL == "") {
-		return errors.New("invalid request")
-	}
-	return nil
+type RequestRedirect struct {
+	RID  string `in:"query=rid;form=rid;required" json:"rid"`
+	Code string `in:"query=code;form=code;required" json:"code"`
+}
+
+type RequestGetAuthResult struct {
+	RID string `in:"query=rid;form=rid;required" json:"rid"`
 }
 
 type ResponseGenerateOAuthPageURL struct {
 	OAuthPageURL string `json:"oauth_page_url"`
-}
-
-type RequestRedirect struct {
-	RID  string `form:"rid" url:"rid" binding:"required"`
-	Code string `form:"code" url:"code" binding:"required"`
-}
-
-type RequestGetAuthResult struct {
-	RID string `form:"rid" url:"rid" binding:"required"`
 }
 
 type ResponseGetAuthResult struct {

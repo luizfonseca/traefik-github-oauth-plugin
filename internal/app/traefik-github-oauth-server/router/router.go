@@ -3,8 +3,10 @@ package router
 import (
 	"net/http"
 
+	"github.com/ggicci/httpin"
 	"github.com/go-chi/chi/v5"
 	server "github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
+	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server/model"
 )
 
 func RegisterRoutes(app *server.App) {
@@ -15,8 +17,8 @@ func RegisterRoutes(app *server.App) {
 	})
 
 	app.Router.Route("/oauth", func(r chi.Router) {
-		r.Get("/redirect", OauthRedirectHandler(app))
-		r.With(apiSecretKeyMiddleware).Post("/page-url", OauthPageUrlHandler(app))
-		r.With(apiSecretKeyMiddleware).Get("/result", OauthAuthResultHandler(app))
+		r.With(httpin.NewInput(model.RequestRedirect{})).Get("/redirect", OauthRedirectHandler(app))
+		r.With(apiSecretKeyMiddleware, httpin.NewInput(model.RequestGenerateOAuthPageURL{})).Post("/page-url", OauthPageUrlHandler(app))
+		r.With(apiSecretKeyMiddleware, httpin.NewInput(model.RequestGetAuthResult{})).Get("/result", OauthAuthResultHandler(app))
 	})
 }

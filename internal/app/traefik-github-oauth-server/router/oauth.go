@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/ggicci/httpin"
 	"github.com/go-chi/render"
 	"github.com/google/go-github/v49/github"
 	server "github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server"
@@ -24,23 +25,22 @@ var (
 // GET /oauth/page-url
 func OauthPageUrlHandler(app *server.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var body model.RequestGenerateOAuthPageURL
+		input := r.Context().Value(httpin.Input).(*model.RequestGenerateOAuthPageURL)
 
-		setNoCacheHeaders(w)
-
-		err := render.DecodeJSON(r.Body, &body)
-		if err != nil {
-			app.Logger.Debug().Err(err).Msg("invalid request")
+		if input == nil {
+			app.Logger.Error().Msgf("Missing required input params")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, model.ResponseError{
-				Message: fmt.Sprintf("BadRequest"),
+				Message: "BadRequest",
 			})
 			return
 		}
 
+		app.Logger.Info().Msgf("Generating OAuth page URL for %v+", input)
+
 		rid := app.AuthRequestManager.Insert(&model.AuthRequest{
-			RedirectURI: body.RedirectURI,
-			AuthURL:     body.AuthURL,
+			RedirectURI: input.RedirectURI,
+			AuthURL:     input.AuthURL,
 		})
 
 		redirectURI, err := buildRedirectURI(app.Config.ApiBaseURL, rid)
@@ -76,16 +76,13 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setNoCacheHeaders(w)
 
-		query := model.RequestRedirect{
-			RID:  r.URL.Query().Get("rid"),
-			Code: r.URL.Query().Get("code"),
-		}
-
-		if query.RID == "" || query.Code == "" {
-			app.Logger.Debug().Msg("invalid request")
+		query := r.Context().Value(httpin.Input).(*model.RequestRedirect)
+		if query == nil {
+			app.Logger.Debug().Msg("invalid request missing RID")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("BadRequest"))
 			return
 		}
-
 		authRequest, found := app.AuthRequestManager.Get(query.RID)
 
 		if !found {
@@ -129,6 +126,8 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 		authURLQuery.Set(constant.QUERY_KEY_REQUEST_ID, query.RID)
 		authURL.RawQuery = authURLQuery.Encode()
 
+		app.Logger.Info().Msgf("redirecting to %s", authURL.String())
+
 		http.Redirect(w, r, authURL.String(), http.StatusFound)
 	}
 }
@@ -138,11 +137,8 @@ func OauthAuthResultHandler(app *server.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setNoCacheHeaders(w)
 
-		query := model.RequestGetAuthResult{
-			RID: r.URL.Query().Get("rid"),
-		}
-
-		if query.RID == "" {
+		query := r.Context().Value(httpin.Input).(*model.RequestGetAuthResult)
+		if query == nil {
 			app.Logger.Debug().Msg("invalid request missing RID")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, model.ResponseError{

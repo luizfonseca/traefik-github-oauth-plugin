@@ -18,7 +18,7 @@ func RegisterRoutes(app *server.App) {
 
 	app.Router.Route("/oauth", func(r chi.Router) {
 		r.With(httpin.NewInput(model.RequestRedirect{})).Get("/redirect", OauthRedirectHandler(app))
-		r.With(apiSecretKeyMiddleware, httpin.NewInput(model.RequestGenerateOAuthPageURL{})).Post("/page-url", OauthPageUrlHandler(app))
+		r.With(apiSecretKeyMiddleware).Post("/page-url", OauthPageUrlHandler(app))
 		r.With(apiSecretKeyMiddleware, httpin.NewInput(model.RequestGetAuthResult{})).Get("/result", OauthAuthResultHandler(app))
 	})
 }

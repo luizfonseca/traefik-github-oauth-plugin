@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,9 +26,10 @@ var (
 // GET /oauth/page-url
 func OauthPageUrlHandler(app *server.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		input := r.Context().Value(httpin.Input).(*model.RequestGenerateOAuthPageURL)
+		var reqBody *model.RequestGenerateOAuthPageURL
 
-		if input == nil {
+		err := json.NewDecoder(r.Body).Decode(&reqBody)
+		if err != nil || reqBody == nil || reqBody.AuthURL == "" || reqBody.RedirectURI == "" {
 			app.Logger.Error().Msgf("Missing required input params")
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, model.ResponseError{
@@ -36,11 +38,9 @@ func OauthPageUrlHandler(app *server.App) http.HandlerFunc {
 			return
 		}
 
-		app.Logger.Info().Msgf("Generating OAuth page URL for %v+", input)
-
 		rid := app.AuthRequestManager.Insert(&model.AuthRequest{
-			RedirectURI: input.RedirectURI,
-			AuthURL:     input.AuthURL,
+			RedirectURI: reqBody.RedirectURI,
+			AuthURL:     reqBody.AuthURL,
 		})
 
 		redirectURI, err := buildRedirectURI(app.Config.ApiBaseURL, rid)

@@ -1,19 +1,23 @@
 package traefik_github_oauth_plugin
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 
-	gologger "github.com/apsdehal/go-logger"
-	"github.com/dghubble/sling"
 	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/app/traefik-github-oauth-server/model"
 	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/pkg/constant"
 	"github.com/luizfonseca/traefik-github-oauth-plugin/internal/pkg/jwt"
+	"github.com/rs/zerolog"
 	"github.com/scylladb/go-set/strset"
 )
 
@@ -66,7 +70,7 @@ type TraefikGithubOauthMiddleware struct {
 	whitelistIdSet    *strset.Set
 	whitelistLoginSet *strset.Set
 
-	logger *gologger.Logger
+	logger *zerolog.Logger
 }
 
 var _ http.Handler = (*TraefikGithubOauthMiddleware)(nil)
@@ -74,23 +78,18 @@ var _ http.Handler = (*TraefikGithubOauthMiddleware)(nil)
 // New creates a new TraefikGithubOauthMiddleware.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	// region Setup logger
-	logLevel := gologger.InfoLevel
+	logLevel := zerolog.InfoLevel
 	switch config.LogLevel {
 	case "DEBUG", "debug":
-		logLevel = gologger.DebugLevel
+		logLevel = zerolog.DebugLevel
 	case "INFO", "info":
-		logLevel = gologger.InfoLevel
+		logLevel = zerolog.InfoLevel
 	case "WARNING", "warning", "WARN", "warn":
-		logLevel = gologger.WarningLevel
+		logLevel = zerolog.WarnLevel
 	case "ERROR", "error":
-		logLevel = gologger.ErrorLevel
+		logLevel = zerolog.ErrorLevel
 	}
-	logger, err := gologger.New("TraefikGithubOauthMiddleware", os.Stdout, 0)
-	if err != nil {
-		return nil, err
-	}
-	logger.SetLogLevel(logLevel)
-	logger.SetFormat("[%{module}] | %{level} | %{time} | %{message}")
+	logger := zerolog.New(os.Stdout).Level(logLevel).With().Str("service", "TraefikGithubOauthMiddleware").Timestamp().Logger()
 	// endregion Setup logger
 
 	authPath := config.AuthPath
@@ -110,51 +109,61 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		whitelistIdSet:    strset.New(config.Whitelist.Ids...),
 		whitelistLoginSet: strset.New(config.Whitelist.Logins...),
 
-		logger: logger,
+		logger: &logger,
 	}, nil
 }
 
 // ServeHTTP implements http.Handler.
-func (p *TraefikGithubOauthMiddleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == p.authPath {
-		p.handleAuthRequest(rw, req)
+func (middleware *TraefikGithubOauthMiddleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	// If the request matches the injected `/_auth` path, handle it as an authentication request.
+	if req.URL.Path == middleware.authPath {
+		middleware.handleAuthRequest(rw, req)
 		return
 	}
-	p.handleRequest(rw, req)
+
+	// Otherwise, handle it as oauth-start request
+	middleware.handleRequest(rw, req)
 }
 
 // handleRequest
-func (p *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWriter, req *http.Request) {
-	user, err := p.getGitHubUserFromCookie(req)
+func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWriter, req *http.Request) {
+	user, err := middleware.getGitHubUserFromCookie(req)
+	// If cookie is missing, re-trigger oauth flow
 	if err != nil {
-		p.logger.Debugf("handleRequest: getGitHubUserFromCookie: %s\n", err.Error())
+		middleware.logger.Debug().Msgf("handleRequest: getGitHubUserFromCookie: %s\n", err.Error())
 		if req.Method == http.MethodGet {
-			p.redirectToOAuthPage(rw, req)
+			middleware.redirectToOAuthPage(rw, req)
 		}
 		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	if !p.whitelistIdSet.Has(user.Id) && !p.whitelistLoginSet.Has(user.Login) {
+
+	// If cookie is present, check if user is whitelisted
+	if !middleware.whitelistIdSet.Has(user.Id) && !middleware.whitelistLoginSet.Has(user.Login) {
 		setNoCacheHeaders(rw)
 		http.Error(rw, "", http.StatusNotFound)
 		return
 	}
-	p.next.ServeHTTP(rw, req)
+
+	middleware.next.ServeHTTP(rw, req)
 }
 
 // handleAuthRequest
-func (p *TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, req *http.Request) {
+func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, req *http.Request) {
 	setNoCacheHeaders(rw)
+
 	rid := req.URL.Query().Get(constant.QUERY_KEY_REQUEST_ID)
 	result, err := p.getAuthResult(rid)
 	if err != nil {
-		p.logger.Debugf("handleAuthRequest: getAuthResult: %s\n", err.Error())
+		p.logger.Debug().Msgf("handleAuthRequest: getAuthResult: %s\n", err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	// Generate JWTs
 	tokenString, err := jwt.GenerateJwtTokenString(result.GitHubUserID, result.GitHubUserLogin, p.jwtSecretKey)
 	if err != nil {
-		p.logger.Debugf("handleAuthRequest: GenerateJwtTokenString: %s\n", err.Error())
+		p.logger.Debug().Msgf("handleAuthRequest: GenerateJwtTokenString: %s\n", err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -166,62 +175,90 @@ func (p *TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter,
 	http.Redirect(rw, req, result.RedirectURI, http.StatusFound)
 }
 
-func (p *TraefikGithubOauthMiddleware) redirectToOAuthPage(rw http.ResponseWriter, req *http.Request) {
+// Redirects to /oauth/page-url to start oauth flow
+func (p TraefikGithubOauthMiddleware) redirectToOAuthPage(rw http.ResponseWriter, req *http.Request) {
 	setNoCacheHeaders(rw)
+
 	oAuthPageURL, err := p.generateOAuthPageURL(getRawRequestUrl(req), p.getAuthURL(req))
 	if err != nil {
-		p.logger.Debugf("redirectToOAuthPage: generateOAuthPageURL: %s\n", err.Error())
+		p.logger.Debug().Msgf("redirectToOAuthPage: generateOAuthPageURL: %s\n", err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(rw, req, oAuthPageURL, http.StatusFound)
 }
 
-func (p *TraefikGithubOauthMiddleware) generateOAuthPageURL(redirectURI, authURL string) (string, error) {
+func (tg TraefikGithubOauthMiddleware) generateOAuthPageURL(redirectURI, authURL string) (string, error) {
 	reqBody := model.RequestGenerateOAuthPageURL{
 		RedirectURI: redirectURI,
 		AuthURL:     authURL,
 	}
-	req := sling.New().Base(p.apiBaseUrl).Post(constant.ROUTER_GROUP_PATH_OAUTH + "/" + constant.ROUTER_PATH_OAUTH_PAGE_URL)
-	if 0 < len(p.apiSecretKey) {
-		req.Set(constant.HTTP_HEADER_AUTHORIZATION, fmt.Sprintf("%s %s", constant.AUTHORIZATION_PREFIX_TOKEN, p.apiSecretKey))
-	}
-	var respBody model.ResponseGenerateOAuthPageURL
-	var errRespBody model.ResponseError
-	_, err := req.BodyJSON(reqBody).Receive(&respBody, &errRespBody)
+
+	httpClient := http.Client{Timeout: 5 * time.Second}
+	reqBodyJson, err := json.Marshal(reqBody)
 	if err != nil {
 		return "", err
 	}
-	if 0 < len(errRespBody.Message) {
-		return "", fmt.Errorf("rpc failed, message: %s", errRespBody.Message)
+
+	req, err := http.NewRequest(http.MethodPost, tg.getOauthPageUrl(), bytes.NewBuffer(reqBodyJson))
+	if err != nil {
+		return "", err
 	}
+	req.Header.Add("accept", "application/json")
+	req.Header.Add("content-type", "application/json")
+
+	// If API secret key is present, use it as bearer token for internal calls
+	if len(tg.apiSecretKey) > 0 {
+		req.Header.Add("authorization", fmt.Sprintf("%s %s", "Bearer", tg.apiSecretKey))
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	respBody := model.ResponseGenerateOAuthPageURL{}
+
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		tg.logger.Error().Msgf("Failed to decode response from oauth server: %s", err.Error())
+		return "", errors.New("unprocessable entity")
+	}
+
 	return respBody.OAuthPageURL, nil
 }
 
-func (p *TraefikGithubOauthMiddleware) getAuthResult(rid string) (*model.ResponseGetAuthResult, error) {
-	req := sling.New().Base(p.apiBaseUrl).Get(constant.ROUTER_GROUP_PATH_OAUTH + "/" + constant.ROUTER_PATH_OAUTH_RESULT)
-	if 0 < len(p.apiSecretKey) {
-		req.Set(constant.HTTP_HEADER_AUTHORIZATION, fmt.Sprintf("%s %s", constant.AUTHORIZATION_PREFIX_TOKEN, p.apiSecretKey))
-	}
+func (tg TraefikGithubOauthMiddleware) getAuthResult(rid string) (*model.ResponseGetAuthResult, error) {
+	httpClient := http.Client{Timeout: 5 * time.Second}
 
-	// req.QueryStruct seems to panic in yaegi
-	httpRequest, err := req.Request()
+	req, err := http.NewRequest(http.MethodGet, tg.getOauthResultUrl(), nil)
 	if err != nil {
 		return nil, err
 	}
-	q := httpRequest.URL.Query()
-	q.Add(constant.QUERY_KEY_REQUEST_ID, rid)
-	httpRequest.URL.RawQuery = q.Encode()
 
-	var respBody model.ResponseGetAuthResult
-	var errRespBody model.ResponseError
-	_, err = req.Do(httpRequest, &respBody, &errRespBody)
+	// Appends ?rid= to /oauth/result
+	qr := req.URL.Query()
+	qr.Add(constant.QUERY_KEY_REQUEST_ID, rid)
+	req.URL.RawQuery = qr.Encode()
+
+	if len(tg.apiSecretKey) > 0 {
+		req.Header.Add("authorization", fmt.Sprintf("%s %s", "Bearer", tg.apiSecretKey))
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	if 0 < len(errRespBody.Message) {
-		return nil, fmt.Errorf("rpc failed, message: %s", errRespBody.Message)
+	defer resp.Body.Close()
+
+	respBody := model.ResponseGetAuthResult{}
+	err = json.NewDecoder(resp.Body).Decode(&respBody)
+	if err != nil {
+		tg.logger.Error().Msgf("Failed to decode response from oauth server: %s", err.Error())
+		return nil, err
 	}
+
 	return &respBody, nil
 }
 
@@ -233,17 +270,29 @@ func (p *TraefikGithubOauthMiddleware) getGitHubUserFromCookie(req *http.Request
 	return jwt.ParseTokenString(jwtCookie.Value, p.jwtSecretKey)
 }
 
+// Returns base_url + '/oauth/page-url'
+func (p TraefikGithubOauthMiddleware) getOauthPageUrl() string {
+	return p.apiBaseUrl + constant.ROUTER_GROUP_PATH_OAUTH + "/" + constant.ROUTER_PATH_OAUTH_PAGE_URL
+}
+
+// Returns base_url + '/oauth/result'
+func (p TraefikGithubOauthMiddleware) getOauthResultUrl() string {
+	return p.apiBaseUrl + constant.ROUTER_GROUP_PATH_OAUTH + "/" + constant.ROUTER_PATH_OAUTH_RESULT
+}
+
 func (p *TraefikGithubOauthMiddleware) getAuthURL(originalReq *http.Request) string {
-	var builder strings.Builder
 	scheme := "http"
 	if originalReq.TLS != nil {
 		scheme = "https"
 	}
-	builder.WriteString(scheme)
-	builder.WriteString("://")
-	builder.WriteString(originalReq.Host)
-	builder.WriteString(p.authPath)
-	return builder.String()
+
+	gen := url.URL{
+		Scheme: scheme,
+		Host:   originalReq.Host,
+		Path:   p.authPath,
+	}
+
+	return gen.String()
 }
 
 func setNoCacheHeaders(rw http.ResponseWriter) {
@@ -253,16 +302,14 @@ func setNoCacheHeaders(rw http.ResponseWriter) {
 }
 
 func getRawRequestUrl(originalReq *http.Request) string {
-	var builder strings.Builder
+	originalUrl := originalReq.URL
 	scheme := "http"
 	if originalReq.TLS != nil {
 		scheme = "https"
 	}
-	builder.WriteString(scheme)
-	builder.WriteString("://")
-	builder.WriteString(originalReq.Host)
-	builder.WriteString(originalReq.URL.String())
-	return builder.String()
+	originalUrl.Scheme = scheme
+
+	return originalUrl.String()
 }
 
 func getRandomString32() string {

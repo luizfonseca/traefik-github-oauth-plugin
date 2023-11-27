@@ -3,8 +3,6 @@ module github.com/luizfonseca/traefik-github-oauth-plugin
 go 1.21.4
 
 require (
-	github.com/apsdehal/go-logger v0.0.0-20190515212710-b0d6ccfee0e6
-	github.com/dghubble/sling v1.4.1
 	github.com/go-chi/render v1.0.3
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v49 v49.1.0

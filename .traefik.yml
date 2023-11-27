@@ -5,9 +5,8 @@ type: middleware
 import: github.com/luizfonseca/traefik-github-oauth-plugin
 
 summary: >
-  This is a Traefik middleware plugin that allows users to authenticate using GitHub OAuth.
-  The plugin is intended to be used as a replacement for the BasicAuth middleware,
-  providing a more secure way for users to access protected routes. 
+  This is a lightweight Traefik middleware plugin that allows users to authenticate using GitHub OAuth on specific domains or routes.
+  This plugin requires a sidecar API server to handle the OAuth flow and to validate the JWT token.
 
 testData:
   apiBaseUrl: http://<traefik-github-oauth-server-host>

@@ -92,7 +92,10 @@ func NewDefaultApp() *App {
 		hlog.RefererHandler("referer"),
 		hlog.UserAgentHandler("userAgent"),
 		hlog.RequestIDHandler("requestId", "Request-Id"),
-		hlog.RemoteAddrHandler("ip"))
+		hlog.RemoteAddrHandler("ip"),
+		hlog.CustomHeaderHandler("xForwardedFor", "X-Forwarded-For"),
+		hlog.CustomHeaderHandler("xRealIp", "X-Real-Ip"),
+	)
 	// Recoverer middleware recovers from panics and writes a 500 if there was one.
 	router.Use(middleware.Recoverer)
 
@@ -103,7 +106,7 @@ func NewDefaultApp() *App {
 			ReadHeaderTimeout: 5 * time.Second,
 		},
 		router,
-		NewAuthRequestManager(cache.New(10*time.Minute, 30*time.Minute)),
+		NewAuthRequestManager(cache.New(5*time.Minute, 11*time.Minute)),
 		&logger,
 	)
 }

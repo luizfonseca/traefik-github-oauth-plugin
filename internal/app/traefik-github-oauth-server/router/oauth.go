@@ -54,7 +54,7 @@ func OauthPageUrlHandler(app *server.App) http.HandlerFunc {
 
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, model.ResponseError{
-				Message: fmt.Sprintf("[server]%s: %s", err.Error(), app.Config.ApiBaseURL),
+				Message: "InternalServerError",
 			})
 			return
 		}
@@ -103,7 +103,7 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 				Err(err).
 				Msg("failed to get GitHub user")
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("InternalServerError"))
 			return
 		}
 
@@ -119,7 +119,7 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 				Msg("invalid auth url")
 
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(fmt.Errorf("%s:, %s", ErrInvalidAuthURL.Error(), authRequest.AuthURL).Error()))
+			w.Write([]byte("InternalServerError"))
 			return
 		}
 		authURLQuery := authURL.Query()

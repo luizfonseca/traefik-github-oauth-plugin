@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -123,7 +122,8 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 		if req.Method == http.MethodGet {
 			middleware.redirectToOAuthPage(rw, req)
 		}
-		http.Error(rw, err.Error(), http.StatusUnauthorized)
+		middleware.logger.Printf("Failed to get user from cookie: %s", err.Error())
+		http.Error(rw, "", http.StatusUnauthorized)
 		return
 	}
 
@@ -144,14 +144,16 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 	rid := req.URL.Query().Get(constant.QUERY_KEY_REQUEST_ID)
 	result, err := p.getAuthResult(rid)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		p.logger.Printf("Failed to get auth: %s", err.Error())
+		http.Error(rw, "", http.StatusInternalServerError)
 		return
 	}
 
 	// Generate JWTs
 	tokenString, err := jwt.GenerateJwtTokenString(result.GitHubUserID, result.GitHubUserLogin, p.jwtSecretKey)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		p.logger.Printf("Failed to generate JWT: %s", err.Error())
+		http.Error(rw, "", http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(rw, &http.Cookie{
@@ -168,7 +170,8 @@ func (p TraefikGithubOauthMiddleware) redirectToOAuthPage(rw http.ResponseWriter
 
 	oAuthPageURL, err := p.generateOAuthPageURL(getRawRequestUrl(req), p.getAuthURL(req))
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		p.logger.Printf("Failed to generate oauth page url: %s", err.Error())
+		http.Error(rw, "", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(rw, req, oAuthPageURL, http.StatusFound)
@@ -208,8 +211,7 @@ func (tg TraefikGithubOauthMiddleware) generateOAuthPageURL(redirectURI, authURL
 
 	err = json.NewDecoder(resp.Body).Decode(&respBody)
 	if err != nil {
-		tg.logger.Printf("Failed to decode response from oauth server: %s", err.Error())
-		return "", errors.New("unprocessable entity")
+		return "", err
 	}
 
 	return respBody.OAuthPageURL, nil

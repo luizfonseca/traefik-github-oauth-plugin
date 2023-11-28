@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.1...v0.3.2) (2023-11-28)
+
+
+### Bug Fixes
+
+* **server:** stop emitting internal errors in responses ([4068739](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/4068739b6ecff9cacff3a20714cbe7d23bf235a5))
+* **traefik-plugin:** stop leaking error information on responses ([c0b3e88](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/c0b3e88c73503c49de50e8384a8386cfc7d6fbc4))
+
 ## 0.3.1 (2023-11-27)
 
 

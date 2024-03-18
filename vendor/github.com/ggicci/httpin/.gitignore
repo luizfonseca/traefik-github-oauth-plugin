@@ -17,3 +17,5 @@
 
 # Project specified
 .DS_Store
+__debug*
+docs/

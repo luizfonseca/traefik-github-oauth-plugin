@@ -5,108 +5,164 @@ package httpin
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
 	"net/http"
 	"reflect"
+
+	"github.com/ggicci/httpin/core"
+	"github.com/ggicci/httpin/internal"
 )
 
-type ContextKey int
+type contextKey int
 
 const (
 	// Input is the key to get the input object from Request.Context() injected by httpin. e.g.
 	//
 	//     input := r.Context().Value(httpin.Input).(*InputStruct)
-	Input ContextKey = iota
-
-	// RequestValue is the key to get the HTTP request value (of *http.Request)
-	// from DirectiveRuntime.Context. The HTTP request value is injected by
-	// httpin to the context of DirectiveRuntime before executing the directive.
-	// See Core.Decode() for more details.
-	RequestValue
-
-	// CustomDecoder is the key to get the custom decoder for a field from
-	// Resolver.Context. Which is specified by the "decoder" directive.
-	// During resolver building phase, the "decoder" directive will be removed
-	// from the resolver, and the targeted decoder by name will be put into
-	// Resolver.Context with this key. e.g.
-	//
-	//    type GreetInput struct {
-	//        Message string `httpin:"decoder=custom"`
-	//    }
-	// For the above example, the decoder named "custom" will be put into the
-	// resolver of Message field with this key.
-	CustomDecoder
-
-	// FieldSet is used by executors to tell whether a field has been set. When
-	// multiple executors were applied to a field, if the field value were set
-	// by a former executor, the latter executors MAY skip running by consulting
-	// this context value.
-	FieldSet
+	Input contextKey = iota
 )
 
-var (
-	globalCustomErrorHandler ErrorHandler = defaultErrorHandler
-)
+// Option is a collection of options for creating a Core instance.
+var Option coreOptions = coreOptions{
+	WithErrorHandler:            core.WithErrorHandler,
+	WithMaxMemory:               core.WithMaxMemory,
+	WithNestedDirectivesEnabled: core.WithNestedDirectivesEnabled,
+}
 
-// ErrorHandler is the type of custom error handler. The error handler is used
-// by the http.Handler that created by NewInput() to handle errors during
-// decoding the HTTP request.
-type ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error)
+// New calls core.New to create a new Core instance. Which is responsible for both:
+//
+//   - decoding an HTTP request to an instance of the inputStruct;
+//   - and encoding an instance of the inputStruct to an HTTP request.
+//
+// Note that the Core instance is bound to the given specific type, it will not
+// work for other types. If you want to decode/encode other types, you need to
+// create another Core instance. Or directly use the following functions, which are
+// just shortcuts of Core's methods, so you don't need to create a Core instance:
+//   - httpin.Decode(): decode an HTTP request to an instance of the inputStruct.
+//   - httpin.NewRequest() to encode an instance of the inputStruct to an HTTP request.
+//
+// For best practice, we would recommend using httpin.NewInput() to create an
+// HTTP middleware for a specific input type. The middleware can be bound to an
+// API, chained with other middlewares, and also reused in other APIs. You even
+// don't need to call the Deocde() method explicitly, the middleware will do it
+// for you and put the decoded instance to the request's context.
+func New(inputStruct any, opts ...core.Option) (*core.Core, error) {
+	return core.New(inputStruct, opts...)
+}
 
-// Decode decodes an HTTP request to the given input struct. The input must be a
-// pointer to a struct instance. For example:
+// File is the builtin type of httpin to manupulate file uploads. On the server
+// side, it is used to represent a file in a multipart/form-data request. On the
+// client side, it is used to represent a file to be uploaded.
+type File = core.File
+
+// UploadFile is a helper function to create a File instance from a file path.
+// It is useful when you want to upload a file from the local file system.
+func UploadFile(path string) *File {
+	return core.UploadFile(path)
+}
+
+// UploadStream is a helper function to create a File instance from a io.Reader. It
+// is useful when you want to upload a file from a stream.
+func UploadStream(r io.ReadCloser) *File {
+	return core.UploadStream(r)
+}
+
+// DecodeTo decodes an HTTP request and populates input with data from the HTTP request.
+// The input must be a pointer to a struct instance. For example:
 //
 //	input := &InputStruct{}
-//	if err := Decode(req, &input); err != nil { ... }
+//	if err := DecodeTo(req, input); err != nil { ... }
 //
 // input is now populated with data from the request.
-func Decode(req *http.Request, input interface{}) error {
-	originalType := reflect.TypeOf(input)
-	if originalType.Kind() != reflect.Ptr {
-		return fmt.Errorf("httpin: input must be a pointer")
-	}
-	core, err := New(originalType.Elem())
+func DecodeTo(req *http.Request, input any, opts ...core.Option) error {
+	co, err := New(internal.DereferencedType(input), opts...)
 	if err != nil {
 		return err
 	}
-	if value, err := core.Decode(req); err != nil {
-		return err
+	return co.DecodeTo(req, input)
+}
+
+// Decode decodes an HTTP request to an instance of T and returns its pointer
+// (*T). T must be a struct type. For example:
+//
+//	if user, err := Decode[User](req); err != nil { ... }
+//	// now user is a *User instance, which has been populated with data from the request.
+func Decode[T any](req *http.Request, opts ...core.Option) (*T, error) {
+	rt := internal.TypeOf[T]()
+	if rt.Kind() != reflect.Struct {
+		return nil, errors.New("generic type T must be a struct type")
+	}
+	co, err := New(rt, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if v, err := co.Decode(req); err != nil {
+		return nil, err
 	} else {
-		if originalType.Elem().Kind() == reflect.Ptr {
-			reflect.ValueOf(input).Elem().Set(reflect.ValueOf(value))
-		} else {
-			reflect.ValueOf(input).Elem().Set(reflect.ValueOf(value).Elem())
-		}
-		return nil
+		return v.(*T), nil
 	}
 }
 
-// NewInput creates a "Middleware". A middleware is a function that takes a
-// http.Handler and returns another http.Handler.
+// NewRequest wraps NewRequestWithContext using context.Background(), see NewRequestWithContext.
+func NewRequest(method, url string, input any, opts ...core.Option) (*http.Request, error) {
+	return NewRequestWithContext(context.Background(), method, url, input)
+}
+
+// NewRequestWithContext turns the given input into an HTTP request. The input
+// must be a struct instance. And its fields' "in" tags define how to bind the
+// data from the struct to the HTTP request. Use it as the replacement of
+// http.NewRequest().
+//
+//	addUserPayload := &AddUserRequest{...}
+//	addUserRequest, err := NewRequestWithContext(context.Background(), "GET", "http://example.com", addUserPayload)
+//	http.DefaultClient.Do(addUserRequest)
+func NewRequestWithContext(ctx context.Context, method, url string, input any, opts ...core.Option) (*http.Request, error) {
+	co, err := New(input, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return co.NewRequestWithContext(ctx, method, url, input)
+}
+
+// NewInput creates an HTTP middleware handler. Which is a function that takes
+// in an http.Handler and returns another http.Handler.
 //
 // The middleware created by NewInput is to add the decoding function to an
-// existing http.Handler. This functionality will decode the HTTP request and
-// put the decoded struct instance to the request's context. So that the next
-// hop can get the decoded struct instance from the request's context.
+// existing http.Handler. This functionality will decode the HTTP request into a
+// struct instance and put its pointer to the request's context. So that the
+// next hop can get the decoded struct instance from the request's context.
 //
 // We recommend using https://github.com/justinas/alice to chain your
 // middlewares. If you're using some popular web frameworks, they may have
 // already provided a middleware chaining mechanism.
-func NewInput(inputStruct interface{}, opts ...Option) func(http.Handler) http.Handler {
-	core, err := New(inputStruct, opts...)
-	if err != nil {
-		panic(fmt.Errorf("httpin: %w", err))
-	}
+//
+// For example:
+//
+//	type ListUsersRequest struct {
+//		Page    int `in:"query=page,page_index,index"`
+//		PerPage int `in:"query=per_page,page_size"`
+//	}
+//
+//	func ListUsersHandler(rw http.ResponseWriter, r *http.Request) {
+//		input := r.Context().Value(httpin.Input).(*ListUsersRequest)
+//		// ...
+//	}
+//
+//	func init() {
+//		http.Handle("/users", alice.New(httpin.NewInput(&ListUsersRequest{})).ThenFunc(ListUsersHandler))
+//	}
+func NewInput(inputStruct any, opts ...core.Option) func(http.Handler) http.Handler {
+	co, err := New(inputStruct, opts...)
+	internal.PanicOnError(err)
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			// Here we read the request and decode it to fill our structure.
 			// Once failed, the request should end here.
-			input, err := core.Decode(r)
+			input, err := co.Decode(r)
 			if err != nil {
-				core.getErrorHandler()(rw, r, err)
+				co.GetErrorHandler()(rw, r, err)
 				return
 			}
 
@@ -117,24 +173,15 @@ func NewInput(inputStruct interface{}, opts ...Option) func(http.Handler) http.H
 	}
 }
 
-// ReplaceDefaultErrorHandler replaces the default error handler with the given
-// custom error handler. The default error handler will be used in the http.Handler
-// that decoreated by the middleware created by NewInput().
-func ReplaceDefaultErrorHandler(custom ErrorHandler) {
-	if custom == nil {
-		panic(fmt.Errorf("httpin: %w", ErrNilErrorHandler))
-	}
-	globalCustomErrorHandler = custom
-}
+type coreOptions struct {
+	// WithErrorHandler overrides the default error handler.
+	WithErrorHandler func(core.ErrorHandler) core.Option
 
-func defaultErrorHandler(rw http.ResponseWriter, r *http.Request, err error) {
-	var invalidFieldError *InvalidFieldError
-	if errors.As(err, &invalidFieldError) {
-		rw.Header().Add("Content-Type", "application/json")
-		rw.WriteHeader(http.StatusUnprocessableEntity) // status: 422
-		json.NewEncoder(rw).Encode(invalidFieldError)
-		return
-	}
+	// WithMaxMemory overrides the default maximum memory size (32MB) when reading
+	// the request body. See https://pkg.go.dev/net/http#Request.ParseMultipartForm
+	// for more details.
+	WithMaxMemory func(int64) core.Option
 
-	http.Error(rw, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError) // status: 500
+	// WithNestedDirectivesEnabled enables/disables nested directives.
+	WithNestedDirectivesEnabled func(bool) core.Option
 }

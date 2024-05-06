@@ -13,12 +13,12 @@ providing a more secure way for users to access protected routes.
 ## Quick Start (Docker)
 
 1. Create a GitHub OAuth App
-   
+
    - See: https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app
    - Set the Authorization callback URL to `http://<traefik-github-oauth-server-host>/oauth/redirect`
 
 2. Run the Traefik GitHub OAuth server
-   
+
    ```sh
    docker run -d --name traefik-github-oauth-server \
      --network <traefik-proxy-network> \
@@ -31,9 +31,9 @@ providing a more secure way for users to access protected routes.
    ```
 
 3. Install the Traefik GitHub OAuth plugin
-   
+
     Add this snippet in the Traefik Static configuration
-   
+
    ```yaml
    experimental:
      plugins:
@@ -43,12 +43,13 @@ providing a more secure way for users to access protected routes.
    ```
 
 4. Run your App
-   
+
    ```sh
    docker run -d --whoami test \
      --network <traefik-proxy-network> \
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.apiBaseUrl=http://traefik-github-oauth-server' \
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.logins[0]=luizfonseca' \
+     --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.teams[0]=827726' \
      --label 'traefik.http.routers.whoami.rule=Host(`whoami.example.com`)' \
      --label 'traefik.http.routers.whoami.middlewares=whoami-github-oauth' \
     traefik/whoami
@@ -85,12 +86,16 @@ jwtSecretKey: optional_secret_key
 logLevel: info
 # whitelist
 whitelist:
-  # The list of GitHub user ids that in the whitelist
+  # The list of GitHub user ids that are whitelisted to access the resources
   ids:
     - 996
-  # The list of GitHub user logins that in the whitelist
+  # The list of GitHub user logins that are whitelisted to access the resources
   logins:
     - luizfonseca
+
+  # The list of Github Teams that are whitelisted to access the resources
+  teams:
+    - 988772
 ```
 
 ## License

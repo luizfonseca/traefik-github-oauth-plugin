@@ -7,14 +7,16 @@ import (
 )
 
 type PayloadUser struct {
-	Id    string `json:"id"`
-	Login string `json:"login"`
+	Id    string   `json:"id"`
+	Login string   `json:"login"`
+	Teams []string `json:"teams"`
 }
 
-func GenerateJwtTokenString(id, login, key string) (string, error) {
+func GenerateJwtTokenString(id string, login string, teamIds []string, key string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":    id,
 		"login": login,
+		"teams": teamIds,
 	})
 	return token.SignedString([]byte(key))
 }
@@ -33,6 +35,7 @@ func ParseTokenString(tokenString, key string) (*PayloadUser, error) {
 		return &PayloadUser{
 			Id:    claims["id"].(string),
 			Login: claims["login"].(string),
+			Teams: claims["teams"].([]string),
 		}, nil
 	} else {
 		return nil, fmt.Errorf("invalid token")

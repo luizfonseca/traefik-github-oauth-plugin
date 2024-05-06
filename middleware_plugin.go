@@ -40,6 +40,9 @@ type ConfigWhitelist struct {
 	Ids []string `json:"ids,omitempty"`
 	// Logins the GitHub user login list.
 	Logins []string `json:"logins,omitempty"`
+
+	// Team IDs that the user must be a member of
+	Teams []string `json:"teams,omitempty"`
 }
 
 // CreateConfig creates the default middleware configuration.
@@ -52,6 +55,7 @@ func CreateConfig() *Config {
 		Whitelist: ConfigWhitelist{
 			Ids:    []string{},
 			Logins: []string{},
+			Teams:  []string{},
 		},
 	}
 }
@@ -68,6 +72,7 @@ type TraefikGithubOauthMiddleware struct {
 	jwtSecretKey      string
 	whitelistIdSet    *strset.Set
 	whitelistLoginSet *strset.Set
+	whitelistTeamSet  *strset.Set
 
 	logger *log.Logger
 }
@@ -97,6 +102,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		jwtSecretKey:      config.JwtSecretKey,
 		whitelistIdSet:    strset.New(config.Whitelist.Ids...),
 		whitelistLoginSet: strset.New(config.Whitelist.Logins...),
+		whitelistTeamSet:  strset.New(config.Whitelist.Teams...),
 
 		logger: logger,
 	}, nil
@@ -110,7 +116,7 @@ func (tg *TraefikGithubOauthMiddleware) ServeHTTP(rw http.ResponseWriter, req *h
 		return
 	}
 
-	// Otherwise, handle it as oauth-start request
+	// Otherwise, handle it as a request that has already been handled through oauth
 	tg.handleRequest(rw, req)
 }
 
@@ -128,7 +134,11 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 	}
 
 	// If cookie is present, check if user is whitelisted
-	if !middleware.whitelistIdSet.Has(user.Id) && !middleware.whitelistLoginSet.Has(user.Login) {
+	// If nothing can be found, returns 404 as we don't want to leak information
+	// But we log the error internally
+	// We are also checking for the user's teams IDs
+	if !middleware.whitelistIdSet.Has(user.Id) &&
+		!middleware.whitelistLoginSet.Has(user.Login) && !middleware.whitelistTeamSet.HasAny(user.Teams...) {
 		setNoCacheHeaders(rw)
 		http.Error(rw, "", http.StatusNotFound)
 		return
@@ -150,7 +160,7 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 	}
 
 	// Generate JWTs
-	tokenString, err := jwt.GenerateJwtTokenString(result.GitHubUserID, result.GitHubUserLogin, p.jwtSecretKey)
+	tokenString, err := jwt.GenerateJwtTokenString(result.GitHubUserID, result.GitHubUserLogin, result.GithubTeamIDs, p.jwtSecretKey)
 	if err != nil {
 		p.logger.Printf("Failed to generate JWT: %s", err.Error())
 		http.Error(rw, "", http.StatusInternalServerError)

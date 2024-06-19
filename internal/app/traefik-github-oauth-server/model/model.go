@@ -19,9 +19,10 @@ type ResponseGenerateOAuthPageURL struct {
 }
 
 type ResponseGetAuthResult struct {
-	RedirectURI     string `json:"redirect_uri"`
-	GitHubUserID    string `json:"github_user_id"`
-	GitHubUserLogin string `json:"github_user_login"`
+	RedirectURI     string   `json:"redirect_uri"`
+	GitHubUserID    string   `json:"github_user_id"`
+	GitHubUserLogin string   `json:"github_user_login"`
+	GithubTeamIDs   []string `json:"github_team_ids"`
 }
 
 type ResponseError struct {
@@ -29,8 +30,9 @@ type ResponseError struct {
 }
 
 type AuthRequest struct {
-	RedirectURI     string `json:"redirect_uri"`
-	AuthURL         string `json:"auth_url"`
-	GitHubUserID    string `json:"github_user_id"`
-	GitHubUserLogin string `json:"github_user_login"`
+	RedirectURI     string   `json:"redirect_uri"`
+	AuthURL         string   `json:"auth_url"`
+	GitHubUserID    string   `json:"github_user_id"`
+	GitHubUserLogin string   `json:"github_user_login"`
+	GithubTeamIDs   []string `json:"github_team_ids"`
 }

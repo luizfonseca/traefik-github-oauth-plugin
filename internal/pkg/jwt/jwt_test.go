@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var testTeams = []string{"team1", "team2"}
+
 const (
 	id    = "12345"
 	login = "testuser"
@@ -14,7 +16,7 @@ const (
 
 func TestGenerateJwtTokenString(t *testing.T) {
 	// execution
-	tokenString, err := GenerateJwtTokenString(id, login, key)
+	tokenString, err := GenerateJwtTokenString(id, login, testTeams, key)
 
 	// assertion
 	assert.NoError(t, err)
@@ -23,7 +25,7 @@ func TestGenerateJwtTokenString(t *testing.T) {
 
 func TestParseTokenString(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, key)
+	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key)
 
 	// execution
 	payload, err := ParseTokenString(tokenString, key)
@@ -32,6 +34,7 @@ func TestParseTokenString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
+	assert.Equal(t, testTeams, payload.Teams)
 }
 
 func TestParseTokenString_InvalidToken(t *testing.T) {
@@ -48,7 +51,7 @@ func TestParseTokenString_InvalidToken(t *testing.T) {
 
 func TestParseTokenString_InvalidKey(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, key)
+	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key)
 	invalidKey := "invalidkey"
 
 	// execution

@@ -92,7 +92,7 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 			return
 		}
 
-		user, err := oAuthCodeToUser(r.Context(), app.GitHubOAuthConfig, query.Code)
+		githubData, err := oAuthCodeToUser(r.Context(), app.GitHubOAuthConfig, query.Code)
 		if err != nil {
 			app.Logger.Error().
 				Caller().
@@ -107,8 +107,17 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 			return
 		}
 
-		authRequest.GitHubUserID = cast.ToString(user.GetID())
-		authRequest.GitHubUserLogin = user.GetLogin()
+		authRequest.GitHubUserID = cast.ToString(githubData.User.GetID())
+		authRequest.GitHubUserLogin = githubData.User.GetLogin()
+
+		if authRequest.GithubTeamIDs != nil {
+			var teamIDs []string
+			for _, team := range githubData.Teams {
+				teamIDs = append(teamIDs, cast.ToString(team.GetID()))
+			}
+
+			authRequest.GithubTeamIDs = teamIDs
+		}
 
 		authURL, err := url.Parse(authRequest.AuthURL)
 		if err != nil {
@@ -163,12 +172,18 @@ func OauthAuthResultHandler(app *server.App) http.HandlerFunc {
 				RedirectURI:     authRequest.RedirectURI,
 				GitHubUserID:    authRequest.GitHubUserID,
 				GitHubUserLogin: authRequest.GitHubUserLogin,
+				GithubTeamIDs:   authRequest.GithubTeamIDs,
 			},
 		)
 	}
 }
 
-func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code string) (*github.User, error) {
+type oauthCodeToUserResponse struct {
+	User  *github.User
+	Teams []*github.Team
+}
+
+func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code string) (*oauthCodeToUserResponse, error) {
 	ctxExchange, cancelExchange := context.WithCancel(ctx)
 	defer cancelExchange()
 	token, err := oAuthConfig.Exchange(ctxExchange, code)
@@ -181,14 +196,29 @@ func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code strin
 	gitHubApiHttpClient := oAuthConfig.Client(ctxClient, token)
 	gitHubApiClient := github.NewClient(gitHubApiHttpClient)
 
+	// Get user information, login and ID
 	ctxGetUser, cancelGetUser := context.WithCancel(ctx)
 	defer cancelGetUser()
-
 	user, _, err := gitHubApiClient.Users.Get(ctxGetUser, "")
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+
+	// Optionally, check if the user is a member of any teams and retrieve them
+	// This won't cancel the main request
+	ctxTeams, cancelListTeams := context.WithCancel(ctx)
+	teams, _, err := gitHubApiClient.Teams.ListUserTeams(ctxTeams, &github.ListOptions{PerPage: 100})
+	defer cancelListTeams()
+	if err != nil {
+		// If the user is not a member of any teams, the API will return a 404
+		// We can ignore this error since this is not a mandatory request
+		teams = nil
+	}
+
+	return &oauthCodeToUserResponse{
+		User:  user,
+		Teams: teams,
+	}, nil
 }
 
 func buildRedirectURI(apiBaseUrl, rid string) (string, error) {

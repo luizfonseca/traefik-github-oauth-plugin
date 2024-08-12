@@ -54,7 +54,7 @@ github.com/rs/zerolog/log
 # github.com/scylladb/go-set v1.0.2
 ## explicit
 github.com/scylladb/go-set/strset
-# github.com/spf13/cast v1.6.0
+# github.com/spf13/cast v1.7.0
 ## explicit; go 1.19
 github.com/spf13/cast
 # github.com/stretchr/testify v1.9.0

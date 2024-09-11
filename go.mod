@@ -1,6 +1,6 @@
 module github.com/luizfonseca/traefik-github-oauth-plugin
 
-go 1.21.4
+go 1.22.1
 
 require (
 	github.com/go-chi/render v1.0.3

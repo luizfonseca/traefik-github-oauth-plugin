@@ -4,7 +4,7 @@ go 1.21.4
 
 require (
 	github.com/go-chi/render v1.0.3
-	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/google/go-github/v49 v49.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.6.0

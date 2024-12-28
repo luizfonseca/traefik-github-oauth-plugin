@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.2...v0.4.0) (2024-12-28)
+
+
+### Features
+
+* add teams information to AuthRequest model ([002b181](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/002b1818990f93bbcf905deaa7c5c994507e63d1))
+* fetch github team information without erroring ([71e0ebe](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/71e0ebe31b0039a7eab89f2a9a875c9687a75190))
+* update middleware to include github teams information ([ec5f219](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/ec5f21960f798d7c9995b6288c44e47d45e8ad06))
+
+
+### Bug Fixes
+
+* incorrect jwt parsing ([7093787](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/7093787890b47a597b2929e79c8800ee4c874938))
+
 ## [0.3.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.1...v0.3.2) (2023-11-28)
 
 

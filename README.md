@@ -98,6 +98,16 @@ whitelist:
     - 988772
 ```
 
+### OAuth Configuration
+
+For the OAuth configuration, you need to create a GitHub OAuth App.
+You can follow the steps in the [GitHub documentation](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app) to create it and obtain the `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` values.
+
+#### OAuth Scopes
+- For `ids` and `logins` you don't need extra scopes.
+- For `teams` you will need to request the `read:org`, `user` or `repo` scopes from the user. See the [documentation](https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user).
+
+
 ## License
 
 [MIT](./LICENSE)

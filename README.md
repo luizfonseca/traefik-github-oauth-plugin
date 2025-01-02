@@ -63,6 +63,7 @@ providing a more secure way for users to access protected routes.
 |------------------------------|-------------------------------------------------------------------------------|---------|----------|
 | `GITHUB_OAUTH_CLIENT_ID`     | The GitHub OAuth App client id                                                |         | Yes      |
 | `GITHUB_OAUTH_CLIENT_SECRET` | The GitHub OAuth App client secret                                            |         | Yes      |
+| `GITHUB_OAUTH_SCOPES`        | Additional scopes to be added to the Oauth workflow. "user" is always added.   | "user"  | No       |
 | `API_BASE_URL`               | The base URL of the Traefik GitHub OAuth server                               |         | Yes      |
 | `API_SECRET_KEY`             | The api secret key. You can ignore this if you are using the internal network |         | No       |
 | `SERVER_ADDRESS`             | The server address                                                            | `:80`   | No       |
@@ -89,6 +90,7 @@ whitelist:
   # The list of GitHub user ids that are whitelisted to access the resources
   ids:
     - 996
+
   # The list of GitHub user logins that are whitelisted to access the resources
   logins:
     - luizfonseca
@@ -106,6 +108,7 @@ You can follow the steps in the [GitHub documentation](https://docs.github.com/e
 #### OAuth Scopes
 - For `ids` and `logins` you don't need extra scopes.
 - For `teams` you will need to request the `read:org`, `user` or `repo` scopes from the user. See the [documentation](https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#list-teams-for-the-authenticated-user).
+    - You can do so by updating the `GITHUB_OAUTH_SCOPES` environment variable with the desired additional scopes, e.g. `GITHUB_OAUTH_SCOPES="repo,read:org"` via the **Server Configuration**.
 
 
 ## License

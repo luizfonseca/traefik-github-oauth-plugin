@@ -63,6 +63,7 @@ func NewApp(
 			ClientID:     config.GitHubOAuthClientID,
 			ClientSecret: config.GitHubOAuthClientSecret,
 			Endpoint:     oauth2github.Endpoint,
+			Scopes:       config.GithubOauthScopes,
 		},
 		AuthRequestManager: authRequestManager,
 		Logger:             logger,

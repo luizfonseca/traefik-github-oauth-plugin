@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.0...v0.4.1) (2025-01-02)
+
+
+### Bug Fixes
+
+* allow additional github scopes to be requested ([7496505](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/749650557543691fe0c53f1cfd5dd0188d737eec))
+* don't add user(write/read) permission by default ([9abb557](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/9abb557cd477dd110a07aa67b901c8b513c31936))
+
 ## [0.4.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.3.2...v0.4.0) (2024-12-28)
 
 

@@ -2,7 +2,6 @@ package traefik_github_oauth_server
 
 import (
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -29,17 +28,12 @@ func envWithDefault(key string, defaultValue string) string {
 }
 
 func githubOauthScopeConfigs() []string {
-	// Default scopes
-	scopes := []string{"user"}
-
-	// Add additional scopes
 	scopesFromEnv := os.Getenv("GITHUB_OAUTH_SCOPES")
 	if scopesFromEnv != "" {
-		sp := strings.Split(scopesFromEnv, ",")
-		scopes = slices.Concat(scopes, sp)
+		return strings.Split(scopesFromEnv, ",")
 	}
 
-	return scopes
+	return []string{}
 }
 
 func NewConfigFromEnv() *Config {

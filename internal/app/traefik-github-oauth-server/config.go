@@ -2,6 +2,7 @@ package traefik_github_oauth_server
 
 import (
 	"os"
+	"strings"
 
 	"github.com/spf13/cast"
 )
@@ -15,6 +16,7 @@ type Config struct {
 	GitHubOAuthClientID     string
 	GitHubOAuthClientSecret string
 	Addr                    string
+	GithubOauthScopes       []string
 }
 
 func envWithDefault(key string, defaultValue string) string {
@@ -23,6 +25,15 @@ func envWithDefault(key string, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func githubOauthScopeConfigs() []string {
+	scopesFromEnv := os.Getenv("GITHUB_OAUTH_SCOPES")
+	if scopesFromEnv != "" {
+		return strings.Split(scopesFromEnv, ",")
+	}
+
+	return []string{}
 }
 
 func NewConfigFromEnv() *Config {
@@ -34,5 +45,6 @@ func NewConfigFromEnv() *Config {
 		LogLevel:                envWithDefault("LOG_LEVEL", "INFO"),
 		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
 		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GithubOauthScopes:       githubOauthScopeConfigs(),
 	}
 }

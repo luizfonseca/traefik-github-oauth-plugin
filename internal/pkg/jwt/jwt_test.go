@@ -37,6 +37,34 @@ func TestParseTokenString(t *testing.T) {
 	assert.Equal(t, testTeams, payload.Teams)
 }
 
+func TestParseTokenString_EmptyTeams(t *testing.T) {
+	// setup
+	tokenString, _ := GenerateJwtTokenString(id, login, []string{}, key)
+
+	// execution
+	payload, err := ParseTokenString(tokenString, key)
+
+	// assertion
+	assert.NoError(t, err)
+	assert.Equal(t, id, payload.Id)
+	assert.Equal(t, login, payload.Login)
+	assert.Equal(t, payload.Teams, []string{})
+}
+
+func TestParseTokenString_NoTeams(t *testing.T) {
+	// setup
+	tokenString, _ := GenerateJwtTokenString(id, login, nil, key)
+
+	// execution
+	payload, err := ParseTokenString(tokenString, key)
+
+	// assertion
+	assert.NoError(t, err)
+	assert.Equal(t, id, payload.Id)
+	assert.Equal(t, login, payload.Login)
+	assert.Equal(t, payload.Teams, []string{})
+}
+
 func TestParseTokenString_InvalidToken(t *testing.T) {
 	// setup
 	tokenString := "invalidtoken"

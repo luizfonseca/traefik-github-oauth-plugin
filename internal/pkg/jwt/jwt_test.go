@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,22 @@ func TestParseTokenString(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, testTeams, payload.Teams)
+}
+
+func TestParseTokenStringWithoutTeams(t *testing.T) {
+	// setup
+	tokenString, _ := GenerateJwtTokenString(id, login, []string{}, key)
+
+	fmt.Printf("tokenString: %s\n", tokenString)
+
+	// execution
+	payload, err := ParseTokenString(tokenString, key)
+
+	// assertion
+	assert.NoError(t, err)
+	assert.Equal(t, id, payload.Id)
+	assert.Equal(t, login, payload.Login)
+	assert.Equal(t, payload.Teams, []string{})
 }
 
 func TestParseTokenString_InvalidToken(t *testing.T) {

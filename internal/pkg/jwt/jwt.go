@@ -32,11 +32,21 @@ func ParseTokenString(tokenString, key string) (*PayloadUser, error) {
 		return nil, err
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		teamFromClaims := claims["teams"].([]interface{})
+		var teamFromClaims []interface{}
+
+		switch claims["teams"].(type) {
+		case []interface{}:
+			teamFromClaims = claims["teams"].([]interface{})
+		case nil:
+			// Backwards compatible with previous tokens, nothing to do
+		}
+
 		teams := make([]string, len(teamFromClaims))
 
 		for i, v := range teamFromClaims {
-			teams[i] = v.(string)
+			if stringValue, ok := v.(string); ok {
+				teams[i] = stringValue
+			}
 		}
 
 		return &PayloadUser{

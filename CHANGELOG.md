@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.2...v0.5.0) (2025-01-03)
+
+
+### Features
+
+* add support to require 2FA from github users ([2b84bbd](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/2b84bbd5d1b21a0730a264db3722f797ba791ea3))
+
 ## [0.4.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.1...v0.4.2) (2025-01-03)
 
 

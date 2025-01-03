@@ -36,6 +36,8 @@ type Config struct {
 
 // ConfigWhitelist the middleware configuration whitelist.
 type ConfigWhitelist struct {
+	TwoFactorAuthRequired string `json:"two_factor_auth_required,omitempty"`
+
 	// Ids the GitHub user id list.
 	Ids []string `json:"ids,omitempty"`
 	// Logins the GitHub user login list.
@@ -53,9 +55,10 @@ func CreateConfig() *Config {
 		AuthPath:     DefaultConfigAuthPath,
 		JwtSecretKey: getRandomString32(),
 		Whitelist: ConfigWhitelist{
-			Ids:    []string{},
-			Logins: []string{},
-			Teams:  []string{},
+			Ids:                   []string{},
+			Logins:                []string{},
+			Teams:                 []string{},
+			TwoFactorAuthRequired: "false",
 		},
 	}
 }
@@ -66,13 +69,14 @@ type TraefikGithubOauthMiddleware struct {
 	next http.Handler
 	name string
 
-	apiBaseUrl        string
-	apiSecretKey      string
-	authPath          string
-	jwtSecretKey      string
-	whitelistIdSet    *strset.Set
-	whitelistLoginSet *strset.Set
-	whitelistTeamSet  *strset.Set
+	apiBaseUrl           string
+	apiSecretKey         string
+	authPath             string
+	jwtSecretKey         string
+	whitelistIdSet       *strset.Set
+	whitelistLoginSet    *strset.Set
+	whitelistTeamSet     *strset.Set
+	whitelistRequires2FA bool
 
 	logger *log.Logger
 }
@@ -96,13 +100,14 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		next: next,
 		name: name,
 
-		apiBaseUrl:        baseUrl,
-		apiSecretKey:      config.ApiSecretKey,
-		authPath:          authPath,
-		jwtSecretKey:      config.JwtSecretKey,
-		whitelistIdSet:    strset.New(config.Whitelist.Ids...),
-		whitelistLoginSet: strset.New(config.Whitelist.Logins...),
-		whitelistTeamSet:  strset.New(config.Whitelist.Teams...),
+		apiBaseUrl:           baseUrl,
+		apiSecretKey:         config.ApiSecretKey,
+		authPath:             authPath,
+		jwtSecretKey:         config.JwtSecretKey,
+		whitelistIdSet:       strset.New(config.Whitelist.Ids...),
+		whitelistLoginSet:    strset.New(config.Whitelist.Logins...),
+		whitelistTeamSet:     strset.New(config.Whitelist.Teams...),
+		whitelistRequires2FA: config.Whitelist.TwoFactorAuthRequired == "true",
 
 		logger: logger,
 	}, nil
@@ -129,6 +134,13 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 			middleware.redirectToOAuthPage(rw, req)
 		}
 		middleware.logger.Printf("Failed to get user from cookie: %s", err.Error())
+		http.Error(rw, "", http.StatusUnauthorized)
+		return
+	}
+
+	// Early check for 2FA -- if user is not whitelisted and 2FA is required, return 401
+	if middleware.whitelistRequires2FA && !user.TwoFactorEnabled {
+		setNoCacheHeaders(rw)
 		http.Error(rw, "", http.StatusUnauthorized)
 		return
 	}
@@ -160,7 +172,13 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 	}
 
 	// Generate JWTs
-	tokenString, err := jwt.GenerateJwtTokenString(result.GitHubUserID, result.GitHubUserLogin, result.GithubTeamIDs, p.jwtSecretKey)
+	tokenString, err := jwt.GenerateJwtTokenString(
+		result.GitHubUserID,
+		result.GitHubUserLogin,
+		result.GithubTeamIDs,
+		p.jwtSecretKey,
+		p.whitelistRequires2FA,
+	)
 	if err != nil {
 		p.logger.Printf("Failed to generate JWT: %s", err.Error())
 		http.Error(rw, "", http.StatusInternalServerError)

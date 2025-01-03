@@ -109,6 +109,7 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 
 		authRequest.GitHubUserID = cast.ToString(githubData.User.GetID())
 		authRequest.GitHubUserLogin = githubData.User.GetLogin()
+		authRequest.GithubUserTwoFactorAuth = githubData.User.GetTwoFactorAuthentication()
 
 		if authRequest.GithubTeamIDs != nil {
 			var teamIDs []string
@@ -169,10 +170,11 @@ func OauthAuthResultHandler(app *server.App) http.HandlerFunc {
 			w,
 			r,
 			model.ResponseGetAuthResult{
-				RedirectURI:     authRequest.RedirectURI,
-				GitHubUserID:    authRequest.GitHubUserID,
-				GitHubUserLogin: authRequest.GitHubUserLogin,
-				GithubTeamIDs:   authRequest.GithubTeamIDs,
+				RedirectURI:             authRequest.RedirectURI,
+				GitHubUserID:            authRequest.GitHubUserID,
+				GitHubUserLogin:         authRequest.GitHubUserLogin,
+				GithubTeamIDs:           authRequest.GithubTeamIDs,
+				GithubUserTwoFactorAuth: authRequest.GithubUserTwoFactorAuth,
 			},
 		)
 	}

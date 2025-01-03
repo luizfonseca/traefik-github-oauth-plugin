@@ -50,6 +50,7 @@ providing a more secure way for users to access protected routes.
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.apiBaseUrl=http://traefik-github-oauth-server' \
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.logins[0]=luizfonseca' \
      --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.teams[0]=827726' \
+     --label 'traefik.http.middlewares.whoami-github-oauth.plugin.github-oauth.whitelist.twoFactorAuthRequired=true' \
      --label 'traefik.http.routers.whoami.rule=Host(`whoami.example.com`)' \
      --label 'traefik.http.routers.whoami.middlewares=whoami-github-oauth' \
     traefik/whoami
@@ -85,8 +86,14 @@ jwtSecretKey: optional_secret_key
 # The log level, defaults to info
 # Available values: debug, info, warn, error
 logLevel: info
+
 # whitelist
 whitelist:
+  # When set to `true`, Github Users should have 2FA
+  # configured and set, otherwise they will be denied access
+  # Default is `false`
+  twoFactorAuthRequired: 'true'
+
   # The list of GitHub user ids that are whitelisted to access the resources
   ids:
     - 996

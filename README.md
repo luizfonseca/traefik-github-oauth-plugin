@@ -89,8 +89,8 @@ logLevel: info
 
 # whitelist
 whitelist:
-  # When set to `true`, Github Users should have 2FA
-  # configured and set, otherwise they will be denied access
+  # When set to `true`, the middleware will check if the given user has 2FA
+  # configured, otherwise they will be denied access
   # Default is `false`
   twoFactorAuthRequired: 'true'
 

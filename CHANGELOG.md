@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.1...v0.4.2) (2025-01-03)
+
+
+### Bug Fixes
+
+* make token backwards compatible with missing the teams prop in the JWT ([d770eb7](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/d770eb7fd5f13c7e3dcb4b5d6474e02e45dadc6e))
+
 ## [0.4.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.0...v0.4.1) (2025-01-02)
 
 

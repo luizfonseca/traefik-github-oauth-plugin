@@ -35,6 +35,7 @@ func TestParseTokenString(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, testTeams, payload.Teams)
+	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_EmptyTeams(t *testing.T) {
@@ -49,6 +50,7 @@ func TestParseTokenString_EmptyTeams(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
+	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_NoTeams(t *testing.T) {
@@ -63,6 +65,7 @@ func TestParseTokenString_NoTeams(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
+	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_With2FAEnabled(t *testing.T) {
@@ -77,6 +80,7 @@ func TestParseTokenString_With2FAEnabled(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
+	assert.True(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_InvalidToken(t *testing.T) {

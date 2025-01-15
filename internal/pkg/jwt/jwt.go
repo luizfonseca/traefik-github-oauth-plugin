@@ -7,18 +7,16 @@ import (
 )
 
 type PayloadUser struct {
-	Id               string   `json:"id"`
-	Login            string   `json:"login"`
-	Teams            []string `json:"teams"`
-	TwoFactorEnabled bool     `json:"two_factor_enabled"`
+	Id    string   `json:"id"`
+	Login string   `json:"login"`
+	Teams []string `json:"teams"`
 }
 
-func GenerateJwtTokenString(id string, login string, teamIds []string, key string, two_factor_enabled bool) (string, error) {
+func GenerateJwtTokenString(id string, login string, teamIds []string, key string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":                 id,
-		"login":              login,
-		"teams":              teamIds,
-		"two_factor_enabled": two_factor_enabled,
+		"id":    id,
+		"login": login,
+		"teams": teamIds,
 	})
 	return token.SignedString([]byte(key))
 }
@@ -51,18 +49,10 @@ func ParseTokenString(tokenString, key string) (*PayloadUser, error) {
 			}
 		}
 
-		twoFactorEnabled := false
-		if claims["two_factor_enabled"] != nil {
-			if factorEnabled, ok := claims["two_factor_enabled"].(bool); ok {
-				twoFactorEnabled = factorEnabled
-			}
-		}
-
 		return &PayloadUser{
-			Id:               claims["id"].(string),
-			Login:            claims["login"].(string),
-			Teams:            teams,
-			TwoFactorEnabled: twoFactorEnabled,
+			Id:    claims["id"].(string),
+			Login: claims["login"].(string),
+			Teams: teams,
 		}, nil
 	} else {
 		return nil, fmt.Errorf("invalid token")

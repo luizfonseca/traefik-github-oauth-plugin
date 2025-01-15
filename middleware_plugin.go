@@ -139,11 +139,11 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 	}
 
 	// Early check for 2FA -- if user is not whitelisted and 2FA is required, return 401
-	if middleware.whitelistRequires2FA && !user.TwoFactorEnabled {
-		setNoCacheHeaders(rw)
-		http.Error(rw, "", http.StatusUnauthorized)
-		return
-	}
+	// if middleware.whitelistRequires2FA && !user.TwoFactorEnabled {
+	// 	setNoCacheHeaders(rw)
+	// 	http.Error(rw, "", http.StatusUnauthorized)
+	// 	return
+	// }
 
 	// If cookie is present, check if user is whitelisted
 	// If nothing can be found, returns 404 as we don't want to leak information
@@ -152,7 +152,7 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 	if !middleware.whitelistIdSet.Has(user.Id) &&
 		!middleware.whitelistLoginSet.Has(user.Login) && !middleware.whitelistTeamSet.HasAny(user.Teams...) {
 		setNoCacheHeaders(rw)
-		http.Error(rw, "", http.StatusNotFound)
+		http.Error(rw, "", http.StatusUnauthorized)
 		return
 	}
 
@@ -177,7 +177,6 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 		result.GitHubUserLogin,
 		result.GithubTeamIDs,
 		p.jwtSecretKey,
-		p.whitelistRequires2FA,
 	)
 	if err != nil {
 		p.logger.Printf("Failed to generate JWT: %s", err.Error())

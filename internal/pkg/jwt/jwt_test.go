@@ -16,7 +16,7 @@ const (
 
 func TestGenerateJwtTokenString(t *testing.T) {
 	// execution
-	tokenString, err := GenerateJwtTokenString(id, login, testTeams, key, false)
+	tokenString, err := GenerateJwtTokenString(id, login, testTeams, key)
 
 	// assertion
 	assert.NoError(t, err)
@@ -25,7 +25,7 @@ func TestGenerateJwtTokenString(t *testing.T) {
 
 func TestParseTokenString(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key, false)
+	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key)
 
 	// execution
 	payload, err := ParseTokenString(tokenString, key)
@@ -35,12 +35,11 @@ func TestParseTokenString(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, testTeams, payload.Teams)
-	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_EmptyTeams(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, []string{}, key, false)
+	tokenString, _ := GenerateJwtTokenString(id, login, []string{}, key)
 
 	// execution
 	payload, err := ParseTokenString(tokenString, key)
@@ -50,12 +49,11 @@ func TestParseTokenString_EmptyTeams(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
-	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_NoTeams(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, nil, key, false)
+	tokenString, _ := GenerateJwtTokenString(id, login, nil, key)
 
 	// execution
 	payload, err := ParseTokenString(tokenString, key)
@@ -65,12 +63,11 @@ func TestParseTokenString_NoTeams(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
-	assert.False(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_With2FAEnabled(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, nil, key, true)
+	tokenString, _ := GenerateJwtTokenString(id, login, nil, key)
 
 	// execution
 	payload, err := ParseTokenString(tokenString, key)
@@ -80,7 +77,6 @@ func TestParseTokenString_With2FAEnabled(t *testing.T) {
 	assert.Equal(t, id, payload.Id)
 	assert.Equal(t, login, payload.Login)
 	assert.Equal(t, payload.Teams, []string{})
-	assert.True(t, payload.TwoFactorEnabled)
 }
 
 func TestParseTokenString_InvalidToken(t *testing.T) {
@@ -97,7 +93,7 @@ func TestParseTokenString_InvalidToken(t *testing.T) {
 
 func TestParseTokenString_InvalidKey(t *testing.T) {
 	// setup
-	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key, false)
+	tokenString, _ := GenerateJwtTokenString(id, login, testTeams, key)
 	invalidKey := "invalidkey"
 
 	// execution

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -35,22 +36,6 @@ func NewApp(
 	authRequestManager *AuthRequestManager,
 	logger *zerolog.Logger,
 ) *App {
-	if config.DebugMode {
-		config.LogLevel = "DEBUG"
-	}
-
-	switch config.LogLevel {
-	case "DEBUG", "debug":
-		logger.Level(zerolog.DebugLevel)
-	case "INFO", "info":
-		logger.Level(zerolog.InfoLevel)
-	case "WARNING", "warning", "WARN", "warn":
-		logger.Level(zerolog.WarnLevel)
-	case "ERROR", "error":
-		logger.Level(zerolog.ErrorLevel)
-	default:
-		logger.Level(zerolog.InfoLevel)
-	}
 
 	server.Addr = config.ServerAddress
 	server.Handler = router
@@ -72,8 +57,31 @@ func NewApp(
 	return app
 }
 
+func stringToLogLevel(config *Config) zerolog.Level {
+	if config.DebugMode {
+		config.LogLevel = "DEBUG"
+	}
+
+	switch strings.ToLower(config.LogLevel) {
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	case "fatal":
+		return zerolog.FatalLevel
+	default:
+		return zerolog.InfoLevel
+	}
+}
+
 func NewDefaultApp() *App {
-	logger := zerolog.New(os.Stdout).With().Str("service", "traefik-github-oauth").Timestamp().Logger()
+	config := NewConfigFromEnv()
+
+	logger := zerolog.New(os.Stdout).Level(stringToLogLevel(config)).With().Str("service", "traefik-github-oauth").Timestamp().Logger()
 
 	router := chi.NewRouter()
 
@@ -100,7 +108,6 @@ func NewDefaultApp() *App {
 	// Recoverer middleware recovers from panics and writes a 500 if there was one.
 	router.Use(middleware.Recoverer)
 
-	config := NewConfigFromEnv()
 	return NewApp(
 		config,
 		&http.Server{

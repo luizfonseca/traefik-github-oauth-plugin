@@ -111,7 +111,7 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 		authRequest.GitHubUserLogin = githubData.User.GetLogin()
 		authRequest.GithubUserTwoFactorAuth = githubData.User.GetTwoFactorAuthentication()
 
-		if authRequest.GithubTeamIDs != nil {
+		if githubData.Teams != nil {
 			var teamIDs []string
 			for _, team := range githubData.Teams {
 				teamIDs = append(teamIDs, cast.ToString(team.GetID()))
@@ -119,6 +119,8 @@ func OauthRedirectHandler(app *server.App) http.HandlerFunc {
 
 			authRequest.GithubTeamIDs = teamIDs
 		}
+
+		app.Logger.Debug().Interface("currentAuthRequest", authRequest).Msg("user auth request")
 
 		authURL, err := url.Parse(authRequest.AuthURL)
 		if err != nil {
@@ -189,6 +191,7 @@ func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code strin
 	ctxExchange, cancelExchange := context.WithCancel(ctx)
 	defer cancelExchange()
 	token, err := oAuthConfig.Exchange(ctxExchange, code)
+
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +204,9 @@ func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code strin
 	// Get user information, login and ID
 	ctxGetUser, cancelGetUser := context.WithCancel(ctx)
 	defer cancelGetUser()
+
 	user, _, err := gitHubApiClient.Users.Get(ctxGetUser, "")
+
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +215,7 @@ func oAuthCodeToUser(ctx context.Context, oAuthConfig *oauth2.Config, code strin
 	// This won't cancel the main request
 	ctxTeams, cancelListTeams := context.WithCancel(ctx)
 	teams, _, err := gitHubApiClient.Teams.ListUserTeams(ctxTeams, &github.ListOptions{PerPage: 100})
+
 	defer cancelListTeams()
 	if err != nil {
 		// If the user is not a member of any teams, the API will return a 404

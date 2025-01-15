@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.5.0...v0.5.1) (2025-01-15)
+
+
+### Bug Fixes
+
+* check for githubData.Teams as expected ([92ccd69](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/92ccd69c656b0502cfbb8ae245fdc83ac5b78327))
+
 ## [0.5.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.4.2...v0.5.0) (2025-01-03)
 
 

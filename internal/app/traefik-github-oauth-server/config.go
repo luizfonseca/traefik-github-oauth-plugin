@@ -20,15 +20,15 @@ type Config struct {
 }
 
 func envString(key string) string {
-	value := os.Getenv(key)
-	if strings.HasSuffix(key, "_FILE") && value != "" {
+	fileKey := key + "_FILE"
+	if value := os.Getenv(fileKey); value != "" {
 		content, err := os.ReadFile(value)
 		if err != nil {
-			return ""
+			return os.Getenv(key)
 		}
 		return strings.TrimSpace(string(content))
 	}
-	return value
+	return os.Getenv(key)
 }
 
 func envWithDefault(key string, defaultValue string) string {

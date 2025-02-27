@@ -19,14 +19,21 @@ type Config struct {
 	GithubOauthScopes       []string
 }
 
-func envString(key string) string {
-	fileKey := key + "_FILE"
-	if value := os.Getenv(fileKey); value != "" {
+func envFromFile(key string) string {
+	fileEnvKey := key + "_FILE"
+
+	if value := os.Getenv(fileEnvKey); value != "" {
 		content, err := os.ReadFile(value)
-		if err != nil {
-			return os.Getenv(key)
+		if err == nil {
+			return strings.TrimSpace(string(content))
 		}
-		return strings.TrimSpace(string(content))
+	}
+	return ""
+}
+
+func envString(key string) string {
+	if value := envFromFile(key); value != "" {
+		return value
 	}
 	return os.Getenv(key)
 }

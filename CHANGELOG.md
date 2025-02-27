@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.5.1...v0.6.0) (2025-02-27)
+
+
+### Miscellaneous Chores
+
+* release v0.6.0 ([fc8ad93](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/fc8ad93a4d5963a66b948318ef3d77892c14a538))
+
 ## [0.5.1](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.5.0...v0.5.1) (2025-01-15)
 
 

@@ -69,6 +69,9 @@ providing a more secure way for users to access protected routes.
 | `SERVER_ADDRESS`             | The server address                                                            | `:80`   | No       |
 | `DEBUG_MODE`                 | Enable debug mode and set log level to debug                                  | `false` | No       |
 | `LOG_LEVEL`                  | The log level, Available values: debug, info, warn, error                     | `info`  | No       |
+You can append `_FILE` to any of the environment variable names to load the value from a file.
+
+E.g. `GITHUB_OAUTH_CLIENT_SECRET_FILE=/run/secrets/github_oauth_client_SECRET` where the content of the file `/run/secrets/github_oauth_client_SECRET` will be used as the environment variable.
 
 ### Middleware Configuration
 

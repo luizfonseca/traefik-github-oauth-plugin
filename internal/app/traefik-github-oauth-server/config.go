@@ -19,8 +19,27 @@ type Config struct {
 	GithubOauthScopes       []string
 }
 
+func envFromFile(key string) string {
+	fileEnvKey := key + "_FILE"
+
+	if value := os.Getenv(fileEnvKey); value != "" {
+		content, err := os.ReadFile(value)
+		if err == nil {
+			return strings.TrimSpace(string(content))
+		}
+	}
+	return ""
+}
+
+func envString(key string) string {
+	if value := envFromFile(key); value != "" {
+		return value
+	}
+	return os.Getenv(key)
+}
+
 func envWithDefault(key string, defaultValue string) string {
-	value := os.Getenv(key)
+	value := envString(key)
 	if value == "" {
 		return defaultValue
 	}
@@ -28,7 +47,7 @@ func envWithDefault(key string, defaultValue string) string {
 }
 
 func githubOauthScopeConfigs() []string {
-	scopesFromEnv := os.Getenv("GITHUB_OAUTH_SCOPES")
+	scopesFromEnv := envString("GITHUB_OAUTH_SCOPES")
 	if scopesFromEnv != "" {
 		return strings.Split(scopesFromEnv, ",")
 	}
@@ -38,13 +57,13 @@ func githubOauthScopeConfigs() []string {
 
 func NewConfigFromEnv() *Config {
 	return &Config{
-		ApiBaseURL:              os.Getenv("API_BASE_URL"),
-		ApiSecretKey:            os.Getenv("API_SECRET_KEY"),
-		ServerAddress:           os.Getenv("SERVER_ADDRESS"),
-		DebugMode:               cast.ToBool(os.Getenv("DEBUG_MODE")),
+		ApiBaseURL:              envString("API_BASE_URL"),
+		ApiSecretKey:            envString("API_SECRET_KEY"),
+		ServerAddress:           envString("SERVER_ADDRESS"),
+		DebugMode:               cast.ToBool(envString("DEBUG_MODE")),
 		LogLevel:                envWithDefault("LOG_LEVEL", "INFO"),
-		GitHubOAuthClientID:     os.Getenv("GITHUB_OAUTH_CLIENT_ID"),
-		GitHubOAuthClientSecret: os.Getenv("GITHUB_OAUTH_CLIENT_SECRET"),
+		GitHubOAuthClientID:     envString("GITHUB_OAUTH_CLIENT_ID"),
+		GitHubOAuthClientSecret: envString("GITHUB_OAUTH_CLIENT_SECRET"),
 		GithubOauthScopes:       githubOauthScopeConfigs(),
 	}
 }

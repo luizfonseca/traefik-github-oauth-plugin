@@ -1,11 +1,11 @@
 module github.com/luizfonseca/traefik-github-oauth-plugin
 
 go 1.22.1
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/go-chi/render v1.0.3
-	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-github/v49 v49.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.6.0

@@ -1,7 +1,7 @@
 module github.com/luizfonseca/traefik-github-oauth-plugin
 
 go 1.22.1
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
 	github.com/go-chi/render v1.0.3
@@ -9,7 +9,7 @@ require (
 	github.com/google/go-github/v49 v49.1.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rs/xid v1.6.0
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	github.com/scylladb/go-set v1.0.2
 	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.6.0...v0.7.0) (2025-04-09)
+
+
+### Features
+
+* allow users to configure cookie/jwt expiration ([314070e](https://github.com/luizfonseca/traefik-github-oauth-plugin/commit/314070e52451f1cfcbcee6809483dcd80411225c))
+
 ## [0.6.0](https://github.com/luizfonseca/traefik-github-oauth-plugin/compare/v0.5.1...v0.6.0) (2025-02-27)
 
 

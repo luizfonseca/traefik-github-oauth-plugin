@@ -85,6 +85,9 @@ apiSecretKey: optional_secret_key_if_not_on_the_internal_network
 authPath: /_auth
 # optional jwt secret key, if not set, the plugin will generate a random key
 jwtSecretKey: optional_secret_key
+# optional jwt expiration in hours, defaults to 24 hours
+jwtExpirationInHours: 24
+
 # The log level, defaults to info
 # Available values: debug, info, warn, error
 logLevel: info

@@ -18,7 +18,7 @@ func GenerateJwtTokenString(id string, login string, teamIds []string, key strin
 		"id":    id,
 		"login": login,
 		"teams": teamIds,
-		// buffer of time to expire token is 10 seconds from the set time
+		// buffer of time to expire token is 60 seconds from the set time
 		"exp": jwt.NewNumericDate(exp.Add(time.Second * 60)),
 	})
 	return token.SignedString([]byte(key))

@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -12,11 +13,12 @@ type PayloadUser struct {
 	Teams []string `json:"teams"`
 }
 
-func GenerateJwtTokenString(id string, login string, teamIds []string, key string) (string, error) {
+func GenerateJwtTokenString(id string, login string, teamIds []string, key string, exp time.Time) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":    id,
 		"login": login,
 		"teams": teamIds,
+		"exp":   jwt.NewNumericDate(exp.Add(time.Second * 60)),
 	})
 	return token.SignedString([]byte(key))
 }
@@ -33,6 +35,11 @@ func ParseTokenString(tokenString, key string) (*PayloadUser, error) {
 	}
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		var teamFromClaims []interface{}
+
+		// Check for expiration time
+		// if claims.Valid() != nil {
+		// 	return nil, fmt.Errorf("token is expired")
+		// }
 
 		switch claims["teams"].(type) {
 		case []interface{}:

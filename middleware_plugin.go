@@ -22,16 +22,18 @@ import (
 
 const (
 	DefaultConfigAuthPath = "/_auth"
+	OneDayInHours         = 24
 )
 
 // Config the middleware configuration.
 type Config struct {
-	ApiBaseUrl   string          `json:"api_base_url,omitempty"`
-	ApiSecretKey string          `json:"api_secret_key,omitempty"`
-	AuthPath     string          `json:"auth_path,omitempty"`
-	JwtSecretKey string          `json:"jwt_secret_key,omitempty"`
-	LogLevel     string          `json:"log_level,omitempty"`
-	Whitelist    ConfigWhitelist `json:"whitelist,omitempty"`
+	ApiBaseUrl           string          `json:"api_base_url,omitempty"`
+	ApiSecretKey         string          `json:"api_secret_key,omitempty"`
+	AuthPath             string          `json:"auth_path,omitempty"`
+	JwtSecretKey         string          `json:"jwt_secret_key,omitempty"`
+	JwtExpirationInHours int64           `json:"jwt_expiration_in_hours,omitempty"`
+	LogLevel             string          `json:"log_level,omitempty"`
+	Whitelist            ConfigWhitelist `json:"whitelist,omitempty"`
 }
 
 // ConfigWhitelist the middleware configuration whitelist.
@@ -47,13 +49,14 @@ type ConfigWhitelist struct {
 	Teams []string `json:"teams,omitempty"`
 }
 
-// CreateConfig creates the default middleware configuration.
+// CreateConfig creates the default middleware configuration. Required by Traefik.
 func CreateConfig() *Config {
 	return &Config{
-		ApiBaseUrl:   "",
-		ApiSecretKey: "",
-		AuthPath:     DefaultConfigAuthPath,
-		JwtSecretKey: getRandomString32(),
+		ApiBaseUrl:           "",
+		ApiSecretKey:         "",
+		AuthPath:             DefaultConfigAuthPath,
+		JwtSecretKey:         getRandomString32(),
+		JwtExpirationInHours: OneDayInHours,
 		Whitelist: ConfigWhitelist{
 			Ids:                   []string{},
 			Logins:                []string{},
@@ -73,6 +76,7 @@ type TraefikGithubOauthMiddleware struct {
 	apiSecretKey         string
 	authPath             string
 	jwtSecretKey         string
+	jwtExpirationInHours int64
 	whitelistIdSet       *strset.Set
 	whitelistLoginSet    *strset.Set
 	whitelistTeamSet     *strset.Set
@@ -83,7 +87,7 @@ type TraefikGithubOauthMiddleware struct {
 
 var _ http.Handler = (*TraefikGithubOauthMiddleware)(nil)
 
-// New creates a new TraefikGithubOauthMiddleware.
+// New creates a new TraefikGithubOauthMiddleware. Required by Traefik.
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	logger := log.New(os.Stdout, "service=traefik-github-oauth-middleware level=debug msg=", 0)
 	// endregion Setup logger
@@ -104,6 +108,7 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 		apiSecretKey:         config.ApiSecretKey,
 		authPath:             authPath,
 		jwtSecretKey:         config.JwtSecretKey,
+		jwtExpirationInHours: config.JwtExpirationInHours,
 		whitelistIdSet:       strset.New(config.Whitelist.Ids...),
 		whitelistLoginSet:    strset.New(config.Whitelist.Logins...),
 		whitelistTeamSet:     strset.New(config.Whitelist.Teams...),
@@ -132,6 +137,7 @@ func (middleware *TraefikGithubOauthMiddleware) handleRequest(rw http.ResponseWr
 	if err != nil {
 		if req.Method == http.MethodGet {
 			middleware.redirectToOAuthPage(rw, req)
+			return
 		}
 		middleware.logger.Printf("Failed to get user from cookie: %s", err.Error())
 		http.Error(rw, "", http.StatusUnauthorized)
@@ -171,12 +177,15 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 		return
 	}
 
+	exp := time.Now().Add(time.Duration(p.jwtExpirationInHours) * time.Hour)
+
 	// Generate JWTs
 	tokenString, err := jwt.GenerateJwtTokenString(
 		result.GitHubUserID,
 		result.GitHubUserLogin,
 		result.GithubTeamIDs,
 		p.jwtSecretKey,
+		exp,
 	)
 	if err != nil {
 		p.logger.Printf("Failed to generate JWT: %s", err.Error())
@@ -187,6 +196,7 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 		Name:     constant.COOKIE_NAME_JWT,
 		Value:    tokenString,
 		HttpOnly: true,
+		Expires:  exp,
 	})
 	http.Redirect(rw, req, result.RedirectURI, http.StatusFound)
 }

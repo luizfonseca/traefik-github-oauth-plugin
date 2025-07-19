@@ -192,10 +192,16 @@ func (p TraefikGithubOauthMiddleware) handleAuthRequest(rw http.ResponseWriter, 
 		http.Error(rw, "", http.StatusInternalServerError)
 		return
 	}
+	// Determine if the request is secure (HTTPS)
+	secure := req.TLS != nil
+
 	http.SetCookie(rw, &http.Cookie{
 		Name:     constant.COOKIE_NAME_JWT,
 		Value:    tokenString,
+		Path:     "/",
 		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
 		Expires:  exp,
 	})
 	http.Redirect(rw, req, result.RedirectURI, http.StatusFound)
@@ -337,6 +343,7 @@ func getRawRequestUrl(originalReq *http.Request) string {
 	url.Scheme = scheme
 	url.Host = originalReq.Host
 	url.Path = originalReq.URL.Path
+	url.RawQuery = originalReq.URL.RawQuery
 
 	return url.String()
 }

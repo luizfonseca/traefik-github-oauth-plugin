@@ -25,7 +25,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ggicci/httpin v0.19.0
+	github.com/ggicci/httpin v0.20.0
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

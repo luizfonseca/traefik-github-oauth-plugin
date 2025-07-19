@@ -4,8 +4,8 @@ github.com/ajg/form
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/ggicci/httpin v0.19.0
-## explicit; go 1.20
+# github.com/ggicci/httpin v0.20.0
+## explicit; go 1.23
 github.com/ggicci/httpin
 github.com/ggicci/httpin/core
 github.com/ggicci/httpin/internal

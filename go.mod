@@ -1,8 +1,6 @@
 module github.com/luizfonseca/traefik-github-oauth-plugin
 
-go 1.24.0
-
-toolchain go1.24.1
+go 1.25.0
 
 require (
 	github.com/go-chi/render v1.0.3
@@ -14,7 +12,7 @@ require (
 	github.com/scylladb/go-set v1.0.2
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/oauth2 v0.34.0
+	golang.org/x/oauth2 v0.36.0
 )
 
 require (
